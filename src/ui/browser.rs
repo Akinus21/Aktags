@@ -1,9 +1,9 @@
 use iced::{
     widget::{
         button, column, container, horizontal_rule, row, scrollable,
-        text, Space,
+        text, text_input, Column, Row, Space,
     },
-    Alignment, Column, Element, Length, Row,
+    Alignment, Element, Length,
 };
 
 use super::{app::{AkTags, Message, Panel, ViewMode}, theme::*};

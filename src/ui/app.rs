@@ -1,5 +1,5 @@
 use iced::{
-    Application, Element, Subscription, Task, Theme, time,
+    Element, Subscription, Task, Theme, time,
 };
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -113,7 +113,7 @@ impl iced::Application for AkTags {
     type Flags = (Config, DbPool);
 
     fn new(flags: Self::Flags) -> (Self, Task<Self::Message>) {
-        Self::new(flags)
+        Self::init(flags)
     }
 
     fn title(&self) -> String {
@@ -121,7 +121,7 @@ impl iced::Application for AkTags {
     }
 
     fn theme(&self) -> Self::Theme {
-        self.theme()
+        Theme::Dark
     }
 
     fn update(&mut self, message: Self::Message) -> Task<Self::Message> {
@@ -138,7 +138,7 @@ impl iced::Application for AkTags {
 }
 
 impl AkTags {
-    pub fn new((config, pool): (Config, DbPool)) -> (Self, Task<Message>) {
+    pub fn init((config, pool): (Config, DbPool)) -> (Self, Task<Message>) {
         let is_first_run = config::needs_first_run(&config);
         let first_run_url = config.ollama_base_url.clone();
         let first_run_model = config.ollama_model.clone();
