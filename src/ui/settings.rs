@@ -69,7 +69,7 @@ pub fn view_first_run(app: &AkTags) -> Element<Message> {
                 )
                 .on_press(Message::FirstRunComplete)
                 .padding([12, 32])
-                .style(btn_primary()),
+                .style(|_t, _s| button::Style::Primary),
             ]
             .spacing(0)
             .align_x(Alignment::Start)
@@ -84,8 +84,8 @@ pub fn view_first_run(app: &AkTags) -> Element<Message> {
     .height(Length::Fill);
 
     container(content)
-        .center_x(Alignment::Center)
-        .center_y(Alignment::Center)
+        .center_x(Length::Fill)
+        .center_y(Length::Fill)
         .width(Length::Fill)
         .height(Length::Fill)
         .into()
@@ -101,7 +101,7 @@ pub fn view(app: &AkTags) -> Element<Message> {
             .on_press(Message::SwitchPanel(Panel::Browser))
             .padding([6, 14]),
     ]
-    .align_x(Alignment::Center)
+    .align_y(Alignment::Center)
     .padding([16, 20]);
 
     let content = column![
@@ -145,7 +145,7 @@ pub fn view(app: &AkTags) -> Element<Message> {
                 .on_press(Message::WatchDirAdd(app.settings_watch_dir_input.clone()))
                 .padding([8, 14]),
         ]
-        .align_x(Alignment::Center),
+        .align_y(Alignment::Center),
 
         Space::with_height(24.0),
 
@@ -176,7 +176,7 @@ pub fn view(app: &AkTags) -> Element<Message> {
             button(text("Save Settings").size(13))
                 .on_press(Message::SaveSettings)
                 .padding([8, 20])
-                .style(btn_primary()),
+                .style(|_t, _s| button::Style::Primary),
             Space::with_width(12.0),
             button(text("↺ Re-tag All Files").size(13))
                 .on_press(Message::RetagAll)
@@ -210,9 +210,9 @@ fn watch_dir_row(dir: &PathBuf) -> Element<Message> {
         button(text("×").size(14))
             .on_press(Message::WatchDirRemove(dir.clone()))
             .padding([3, 8])
-            .style(btn_destructive()),
+            .style(|_t, _s| button::Style::Destructive),
     ]
-    .align_x(Alignment::Center)
+    .align_y(Alignment::Center)
     .spacing(8)
     .padding([6, 10])
     .into()

@@ -1,5 +1,5 @@
 use iced::{
-    widget::{button, column, container, row, scrollable, text, text_input, wrapping, Column, Row, Space},
+    widget::{button, column, container, row, scrollable, text, text_input, Column, Row, Space},
     Alignment, Element, Length,
 };
 
@@ -41,10 +41,10 @@ pub fn view_pending(app: &AkTags) -> Element<Message> {
                         .color(Palette::TEXT_DIM),
                 ]
                 .spacing(8)
-                .align_y(Alignment::Center)
+                .align_x(Alignment::Center)
                 .padding(60),
             )
-            .center_x(Alignment::Center)
+            .center_x(Length::Fill)
             .width(Length::Fill)
             .into(),
         ]
@@ -82,7 +82,6 @@ fn pending_card<'a>(
         .collect::<Vec<_>>()
         .join(", ");
 
-    // Category picker buttons
     let cat_buttons: Vec<Element<Message>> = CATEGORIES.iter()
         .map(|&cat| {
             button(text(cat).size(11))
@@ -93,7 +92,6 @@ fn pending_card<'a>(
         .collect();
 
     column![
-        // Tag name + file count
         row![
             text(tag).size(16).color(Palette::ORANGE),
             Space::with_width(12.0),
@@ -107,24 +105,17 @@ fn pending_card<'a>(
         ]
         .align_y(Alignment::Center),
 
-        // Example files
         text(files_preview).size(11)
             .color(Palette::TEXT_DIM),
 
         Space::with_height(8.0),
 
-        // Approve with category
         text("Approve as:").size(11)
             .color(Palette::TEXT_DIM),
-        wrapping::Builder::default()
-                .spacing(6.0)
-                .children(cat_buttons)
-                .build()
-                .into(),
+        Row::with_children(cat_buttons).spacing(6.0),
 
         Space::with_height(8.0),
 
-        // Merge row
         row![
             text_input("Merge into existing tag...", merge_input)
                 .on_input(|v| Message::PendingMergeInputChanged(tag.to_string(), v))
@@ -160,14 +151,17 @@ pub fn view_taxonomy(app: &AkTags) -> Element<Message> {
             .width(130.0),
         Space::with_width(8.0),
         {
-            // Category picker
             let cat_buttons: Vec<Element<Message>> = CATEGORIES.iter()
                 .map(|&cat| {
                     let active = app.new_tag_category == cat;
                     button(text(cat).size(11))
                         .on_press(Message::NewTagCategoryChanged(cat.to_string()))
                         .padding([4, 8])
-                        .style(if active { btn_primary() } else { btn_secondary() })
+                        .style(|_t, _s| if active {
+                            button::Style::Primary
+                        } else {
+                            button::Style::Secondary
+                        })
                         .into()
                 })
                 .collect();
@@ -186,7 +180,6 @@ pub fn view_taxonomy(app: &AkTags) -> Element<Message> {
     .align_y(Alignment::Center)
     .padding([16, 20]);
 
-    // Group tags by category
     let mut by_category: std::collections::HashMap<String, Vec<&(String, crate::taxonomy::TagMeta)>> =
         std::collections::HashMap::new();
     for item in &app.taxonomy {
@@ -209,11 +202,7 @@ pub fn view_taxonomy(app: &AkTags) -> Element<Message> {
                     .size(11)
                     .color(Palette::TEXT_DIM),
                 Space::with_height(8.0),
-                wrapping::Builder::default()
-                .spacing(8.0)
-                .children(tag_chips)
-                .build()
-                .into(),
+                Row::with_children(tag_chips).spacing(8.0),
                 Space::with_height(16.0),
             ]
             .spacing(0)
@@ -258,7 +247,7 @@ fn taxonomy_tag_chip<'a>(
         button(text("×").size(12))
             .on_press(Message::RemoveTaxonomyTag(name.to_string()))
             .padding([2, 5])
-            .style(btn_text()),
+            .style(|_t, _s| button::Style::Text),
     ]
     .align_y(Alignment::Center)
     .spacing(2)

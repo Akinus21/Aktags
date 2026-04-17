@@ -1,5 +1,4 @@
-use iced::{Color, widget::button};
-use iced::widget::button::StyleSheet;
+use iced::Color;
 
 pub struct Palette;
 
@@ -28,34 +27,3 @@ pub const CARD_H:         f32 = 200.0;
 pub const SPACING:        f32 = 12.0;
 pub const PADDING:        f32 = 16.0;
 pub const RADIUS:         f32 = 8.0;
-
-pub fn btn_primary() -> button::Style {
-    button::Style {
-        background: Some(iced::Background::Color(Palette::ACCENT)),
-        text_color: Color::WHITE,
-        border_radius: RADIUS.into(),
-        ..Default::default()
-    }
-}
-
-pub fn btn_secondary() -> button::Style {
-    button::Style {
-        background: Some(iced::Background::Color(Palette::SURFACE2)),
-        text_color: Color::WHITE,
-        border_radius: RADIUS.into(),
-        ..Default::default()
-    }
-}
-
-pub fn btn_text() -> button::Style {
-    button::Style::Text
-}
-
-pub fn btn_destructive() -> button::Style {
-    button::Style {
-        background: Some(iced::Background::Color(Palette::RED)),
-        text_color: Color::WHITE,
-        border_radius: RADIUS.into(),
-        ..Default::default()
-    }
-}

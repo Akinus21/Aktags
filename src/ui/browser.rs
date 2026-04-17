@@ -106,11 +106,19 @@ fn view_nav(app: &AkTags) -> Element<Message> {
 fn tab_button<'a>(label: &'a str, panel: Panel, app: &'a AkTags) -> Element<'a, Message> {
     let active = app.panel == panel;
     button(
-        text(label).size(13).color(if active { Palette::ACCENT } else { Palette::TEXT_DIM })
+        text(label).size(13).color(if active {
+            Palette::ACCENT
+        } else {
+            Palette::TEXT_DIM
+        })
     )
     .on_press(Message::SwitchPanel(panel))
     .padding([8, 18])
-    .style(if active { btn_primary() } else { btn_text() })
+    .style(|_t, _s| if active {
+        button::Style::Primary
+    } else {
+        button::Style::Text
+    })
     .into()
 }
 
@@ -144,7 +152,11 @@ fn view_sidebar(app: &AkTags) -> Element<Message> {
             button(text(&label).size(12))
                 .on_press(Message::TagToggled(tag.clone()))
                 .padding([3, 10])
-                .style(if active { btn_primary() } else { btn_secondary() })
+                .style(|_t, _s| if active {
+                    button::Style::Primary
+                } else {
+                    button::Style::Secondary
+                })
                 .into()
         })
         .collect();
@@ -183,7 +195,11 @@ fn category_item<'a>(
     let is_active = active == &cat;
     button(
         row![
-            text(label).size(13).color(if is_active { Palette::ACCENT } else { Palette::TEXT }),
+            text(label).size(13).color(if is_active {
+                Palette::ACCENT
+            } else {
+                Palette::TEXT
+            }),
             Space::with_width(Length::Fill),
             text(count.to_string()).size(11)
                 .color(Palette::TEXT_DIM),
@@ -193,7 +209,11 @@ fn category_item<'a>(
     .on_press(Message::CategorySelected(cat))
     .padding([5, 10])
     .width(Length::Fill)
-    .style(if is_active { btn_primary() } else { btn_text() })
+    .style(|_t, _s| if is_active {
+        button::Style::Primary
+    } else {
+        button::Style::Text
+    })
     .into()
 }
 
@@ -287,7 +307,7 @@ fn filter_chip(label: &str, on_remove: Message) -> Element<Message> {
     )
     .on_press(on_remove)
     .padding([3, 10])
-    .style(btn_primary())
+    .style(|_t, _s| button::Style::Primary)
     .into()
 }
 
@@ -302,12 +322,10 @@ fn view_grid(app: &AkTags) -> Element<Message> {
         .map(|f| file_card(f, app.selected_file.as_ref().map(|s| s.id) == Some(f.id)))
         .collect();
 
-    container(
-        scrollable(
-            Column::with_children(cards)
-                .spacing(SPACING)
-                .padding(PADDING)
-        )
+    scrollable(
+        Column::with_children(cards)
+            .spacing(SPACING)
+            .padding(PADDING)
     )
     .width(Length::Fill)
     .into()
@@ -324,7 +342,7 @@ fn file_card(file: &FileRecord, selected: bool) -> Element<Message> {
             button(text(t).size(10))
                 .on_press(Message::TagToggled(t.clone()))
                 .padding([2, 6])
-                .style(btn_secondary())
+                .style(|_t, _s| button::Style::Secondary)
                 .into()
         })
         .collect();
@@ -344,7 +362,45 @@ fn file_card(file: &FileRecord, selected: bool) -> Element<Message> {
 
     let btn = button(card_content)
         .on_press(Message::FileSelected(file.id))
-.style(if selected { btn_primary() } else { btn_secondary() })
+        .style(|_t, _s| if selected {
+            button::Style::Primary
+        } else {
+            button::Style::Secondary
+        });
+
+    // Double-click via right-click open workaround (Iced doesn't have dblclick natively)
+    // Single click = select, Ctrl+O or Enter = open
+    btn.into()
+}
+
+// ── List view ─────────────────────────────────────────────────────────────────
+
+fn view_list(app: &AkTags) -> Element<Message> {
+    if app.files.is_empty() {
+        return empty_state("No files found", "Try adjusting your search or filters.");
+    }
+
+    let rows: Vec<Element<Message>> = app.files.iter()
+        .map(|f| file_row(f, app.selected_file.as_ref().map(|s| s.id) == Some(f.id)))
+        .collect();
+
+    Column::with_children(rows)
+        .spacing(4)
+        .padding(PADDING)
+        .width(Length::Fill)
+        .into()
+}
+
+fn file_row(file: &FileRecord, selected: bool) -> Element<Message> {
+    let icon = file_type_icon(&file.extension);
+    let tags: Vec<Element<Message>> = file.tags.iter().take(4)
+        .map(|t| {
+            button(text(t).size(11))
+                .on_press(Message::TagToggled(t.clone()))
+                .padding([2, 6])
+                .style(|_t, _s| button::Style::Secondary)
+                .into()
+        })
         .collect();
 
     let row_content = row![
@@ -371,7 +427,11 @@ fn file_card(file: &FileRecord, selected: bool) -> Element<Message> {
     button(row_content)
         .on_press(Message::FileSelected(file.id))
         .width(Length::Fill)
-        .style(if selected { btn_primary() } else { btn_secondary() })
+        .style(|_t, _s| if selected {
+            button::Style::Primary
+        } else {
+            button::Style::Secondary
+        })
         .into()
 }
 
@@ -388,11 +448,11 @@ fn view_detail(app: &AkTags) -> Element<Message> {
                 button(text(t).size(12))
                     .on_press(Message::TagToggled(t.clone()))
                     .padding([3, 8])
-                    .style(btn_secondary()),
+                    .style(|_t, _s| button::Style::Secondary),
                 button(text("×").size(12))
                     .on_press(Message::RemoveTagFromFile(file.id, t.clone()))
                     .padding([3, 6])
-                    .style(btn_destructive()),
+                    .style(|_t, _s| button::Style::Destructive),
             ]
             .spacing(2)
             .into()
@@ -404,7 +464,7 @@ fn view_detail(app: &AkTags) -> Element<Message> {
         row![
             button(text("×").size(16))
                 .on_press(Message::FileDeselected)
-                .style(btn_text()),
+                .style(|_t, _s| button::Style::Text),
             Space::with_width(Length::Fill),
             button(text("Open →").size(13))
                 .on_press(Message::FileOpened(file.id))
@@ -481,8 +541,8 @@ fn empty_state(title: &str, subtitle: &str) -> Element<Message> {
         .align_x(Alignment::Center)
         .padding(60),
     )
-    .center_x(iced::Alignment::Center)
-    .center_y(iced::Alignment::Center)
+    .center_x(Length::Fill)
+    .center_y(Length::Fill)
     .width(Length::Fill)
     .height(Length::Fill)
     .into()
