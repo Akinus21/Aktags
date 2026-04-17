@@ -1,6 +1,6 @@
 use iced::{
-    widget::{column, container, row, text, Space},
-    Element, Length, Subscription, Task, Theme, time,
+    widget::Space,
+    Element, Subscription, Task, Theme, time,
 };
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};

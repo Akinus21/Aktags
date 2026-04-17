@@ -3,7 +3,7 @@ use iced::{
     Alignment, Element, Length,
 };
 
-use super::{app::{AkTags, Message, Panel}, theme::*};
+use super::{app::{AkTags, Message}, theme::*};
 
 const CATEGORIES: &[&str] = &["work", "education", "technical", "personal", "military", "misc"];
 
@@ -158,9 +158,9 @@ pub fn view_taxonomy(app: &AkTags) -> Element<Message> {
                         .on_press(Message::NewTagCategoryChanged(cat.to_string()))
                         .padding([4, 8])
                         .style(|_t, _s| if active {
-                            button::Style::Primary
+                            button::Style::Filled
                         } else {
-                            button::Style::Secondary
+                            button::Style::Outlined
                         })
                         .into()
                 })

@@ -69,7 +69,7 @@ pub fn view_first_run(app: &AkTags) -> Element<Message> {
                 )
                 .on_press(Message::FirstRunComplete)
                 .padding([12, 32])
-                .style(|_t, _s| button::Style::Primary),
+                .style(|_t, _s| button::Style::Filled),
             ]
             .spacing(0)
             .align_x(Alignment::Start)
@@ -176,7 +176,7 @@ pub fn view(app: &AkTags) -> Element<Message> {
             button(text("Save Settings").size(13))
                 .on_press(Message::SaveSettings)
                 .padding([8, 20])
-                .style(|_t, _s| button::Style::Primary),
+                .style(|_t, _s| button::Style::Filled),
             Space::with_width(12.0),
             button(text("↺ Re-tag All Files").size(13))
                 .on_press(Message::RetagAll)
@@ -192,7 +192,7 @@ pub fn view(app: &AkTags) -> Element<Message> {
         },
     ]
     .spacing(4)
-    .padding([0, 20, 20, 20]);
+    .padding([20, 20]);
 
     column![
         header,
@@ -210,7 +210,12 @@ fn watch_dir_row(dir: &PathBuf) -> Element<Message> {
         button(text("×").size(14))
             .on_press(Message::WatchDirRemove(dir.clone()))
             .padding([3, 8])
-            .style(|_t, _s| button::Style::Destructive),
+            .style(|_t, _s| button::Style {
+        background: Some(iced::Background::Color(Palette::RED)),
+        text_color: iced::Color::WHITE,
+        border_radius: iced::BorderRadius::from(8.0_f32),
+        ..Default::default()
+    }),
     ]
     .align_y(Alignment::Center)
     .spacing(8)
@@ -218,7 +223,7 @@ fn watch_dir_row(dir: &PathBuf) -> Element<Message> {
     .into()
 }
 
-fn section_header(title: &str) -> Element<'static, Message> {
+fn section_header(title: String) -> Element<'static, Message> {
     column![
         text(title).size(13).color(Palette::ACCENT2),
         Space::with_height(8.0),
@@ -226,7 +231,7 @@ fn section_header(title: &str) -> Element<'static, Message> {
     .into()
 }
 
-fn label(s: &str) -> Element<'static, Message> {
+fn label(s: String) -> Element<'static, Message> {
     text(s).size(11)
         .color(Palette::TEXT_DIM)
         .into()

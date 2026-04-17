@@ -151,7 +151,7 @@ impl Daemon {
                     {
                         let path = entry.path().to_owned();
                         if should_process(&path, &scan_supported) {
-                            let hash = db::file_hash(&path);
+                            let _hash = db::file_hash(&path);
                             // will be checked again in process loop, this is just queuing
                             let _ = scan_tx.send(FileEvent::Process(path));
                             count += 1;
