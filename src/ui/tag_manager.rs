@@ -153,7 +153,6 @@ pub fn view_taxonomy(app: &AkTags) -> Element<Message> {
         {
             let cat_buttons: Vec<Element<Message>> = CATEGORIES.iter()
                 .map(|&cat| {
-                    let active = app.new_tag_category == cat;
                     button(text(cat).size(11))
                         .on_press(Message::NewTagCategoryChanged(cat.to_string()))
                         .padding([4, 8])
@@ -189,7 +188,7 @@ pub fn view_taxonomy(app: &AkTags) -> Element<Message> {
     for cat in cats {
         let tags = &by_category[cat];
         let tag_chips: Vec<Element<Message>> = tags.iter()
-            .map(|(name, meta)| taxonomy_tag_chip(name, meta))
+            .map(|(name, meta)| taxonomy_tag_chip(name.clone(), meta))
             .collect();
 
         sections.push(
@@ -220,10 +219,10 @@ pub fn view_taxonomy(app: &AkTags) -> Element<Message> {
     .into()
 }
 
-fn taxonomy_tag_chip<'a>(
-    name: &'a str,
-    meta: &'a crate::taxonomy::TagMeta,
-) -> Element<'a, Message> {
+fn taxonomy_tag_chip(
+    name: String,
+    meta: &crate::taxonomy::TagMeta,
+) -> Element<Message> {
     let aliases_text = if meta.aliases.is_empty() {
         String::new()
     } else {
@@ -233,13 +232,13 @@ fn taxonomy_tag_chip<'a>(
     row![
         text(name).size(13),
         if !aliases_text.is_empty() {
-            Element::from(text(aliases_text.as_str()).size(11).color(Palette::TEXT_DIM))
+            Element::from(text(aliases_text).size(11).color(Palette::TEXT_DIM))
         } else {
             Element::from(Space::with_width(0.0))
         },
         Space::with_width(6.0),
         button(text("×").size(12))
-            .on_press(Message::RemoveTaxonomyTag(name.to_string()))
+            .on_press(Message::RemoveTaxonomyTag(name))
             .padding([2, 5])
             .style(|_t, _s| button::Style::default()),
     ]

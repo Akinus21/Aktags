@@ -185,7 +185,7 @@ fn category_item(
     count: i64,
     cat: Option<String>,
     active: Option<String>,
-) -> Element<Message> {
+) -> Element<'static, Message> {
     let is_active = active == cat;
     button(
         row![
