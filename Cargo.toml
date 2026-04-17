@@ -1,0 +1,60 @@
+[package]
+name = "aktags"
+version = "0.1.0"
+edition = "2021"
+description = "AI-powered tag-based file browser with background daemon"
+
+[[bin]]
+name = "aktags"
+path = "src/main.rs"
+
+[dependencies]
+# ── GUI ───────────────────────────────────────────────────────────────────────
+iced = { version = "0.13", features = ["tokio", "image", "advanced"] }
+
+# ── Async runtime ─────────────────────────────────────────────────────────────
+tokio = { version = "1", features = ["full"] }
+
+# ── Database ──────────────────────────────────────────────────────────────────
+rusqlite = { version = "0.31", features = ["bundled"] }
+r2d2 = "0.8"
+r2d2_sqlite = "0.24"
+
+# ── File watching ─────────────────────────────────────────────────────────────
+notify = "6"
+
+# ── HTTP (Ollama client) ──────────────────────────────────────────────────────
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+
+# ── Serialization ─────────────────────────────────────────────────────────────
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+
+# ── Document text extraction ──────────────────────────────────────────────────
+pdf-extract = "0.7"
+zip = "2"
+roxmltree = "0.19"
+calamine = "0.24"
+
+# ── Image ─────────────────────────────────────────────────────────────────────
+image = { version = "0.25", features = ["jpeg", "png", "gif", "webp", "bmp"] }
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+chrono = { version = "0.4", features = ["serde"] }
+dirs = "5"
+walkdir = "2"
+md5 = "0.7"
+anyhow = "1"
+thiserror = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+crossbeam-channel = "0.5"
+open = "5"
+shellexpand = "3"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
