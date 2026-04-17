@@ -157,11 +157,7 @@ pub fn view_taxonomy(app: &AkTags) -> Element<Message> {
                     button(text(cat).size(11))
                         .on_press(Message::NewTagCategoryChanged(cat.to_string()))
                         .padding([4, 8])
-                        .style(|_t, _s| if active {
-                            button::Style::Filled
-                        } else {
-                            button::Style::Outlined
-                        })
+                        .style(|_t, _s| button::Style::default())
                         .into()
                 })
                 .collect();
@@ -247,7 +243,7 @@ fn taxonomy_tag_chip<'a>(
         button(text("×").size(12))
             .on_press(Message::RemoveTaxonomyTag(name.to_string()))
             .padding([2, 5])
-            .style(|_t, _s| button::Style::Text),
+            .style(|_t, _s| button::Style::default()),
     ]
     .align_y(Alignment::Center)
     .spacing(2)

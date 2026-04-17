@@ -43,7 +43,7 @@ fn view_header(app: &AkTags) -> Element<Message> {
             app.stats.as_ref().map(|s| s.total).unwrap_or(0)
         )
     } else {
-        "Daemon not running".into()
+        "Daemon not running".to_string()
     };
 
     let queue_badge = if app.daemon_stats.queue_size > 0 {
@@ -52,6 +52,9 @@ fn view_header(app: &AkTags) -> Element<Message> {
         String::new()
     };
 
+    let status_label_owned = status_label;
+    let queue_badge_owned = queue_badge;
+
     row![
         text("AkTags").size(20).color(Palette::ACCENT),
         Space::with_width(12.0),
@@ -59,9 +62,9 @@ fn view_header(app: &AkTags) -> Element<Message> {
             .size(12)
             .color(status_color),
         Space::with_width(8.0),
-        text(status_label.as_str()).size(12).color(Palette::TEXT_DIM),
+        text(status_label_owned).size(12).color(Palette::TEXT_DIM),
         Space::with_width(8.0),
-        text(queue_badge.as_str()).size(11).color(Palette::YELLOW),
+        text(queue_badge_owned).size(11).color(Palette::YELLOW),
         Space::with_width(Length::Fill),
         nav_button("↺ Re-tag All", Message::RetagAll),
         Space::with_width(8.0),
@@ -88,12 +91,14 @@ fn view_nav(app: &AkTags) -> Element<Message> {
     let pending_label = if pending_count > 0 {
         format!("🔖 Pending ({})", pending_count)
     } else {
-        "🔖 Pending".into()
+        String::from("🔖 Pending")
     };
+
+    let pending_label_owned = pending_label;
 
     row![
         tab_button("📁 Files",       Panel::Browser,  app),
-        tab_button(pending_label.as_str(), Panel::Pending,  app),
+        tab_button(pending_label_owned.as_str(), Panel::Pending,  app),
         tab_button("🗂 Tag Library",  Panel::Taxonomy, app),
     ]
     .padding([0, 20])
@@ -114,11 +119,7 @@ fn tab_button<'a>(label: &'a str, panel: Panel, app: &'a AkTags) -> Element<'a, 
     )
     .on_press(Message::SwitchPanel(panel))
     .padding([8, 18])
-    .style(|_t, _s| if active {
-        button::Style::Filled
-    } else {
-        button::Style::Text
-    })
+    .style(|_t, _s| button::Style::default())
     .into()
 }
 
@@ -152,11 +153,7 @@ fn view_sidebar(app: &AkTags) -> Element<Message> {
             button(text(&label).size(12))
                 .on_press(Message::TagToggled(tag.clone()))
                 .padding([3, 10])
-                .style(|_t, _s| if active {
-                    button::Style::Filled
-                } else {
-                    button::Style::Outlined
-                })
+                .style(|_t, _s| button::Style::default())
                 .into()
         })
         .collect();
@@ -209,11 +206,7 @@ fn category_item<'a>(
     .on_press(Message::CategorySelected(cat))
     .padding([5, 10])
     .width(Length::Fill)
-    .style(|_t, _s| if is_active {
-        button::Style::Filled
-    } else {
-        button::Style::Text
-    })
+    .style(|_t, _s| button::Style::default())
     .into()
 }
 
@@ -255,6 +248,8 @@ fn view_toolbar(app: &AkTags) -> Element<Message> {
         ViewMode::List => "⊞",
     };
 
+    let count_label_owned = count_label;
+
     row![
         text_input("Search files...", &app.search_query)
             .on_input(Message::SearchChanged)
@@ -262,7 +257,7 @@ fn view_toolbar(app: &AkTags) -> Element<Message> {
             .padding([8, 14])
             .width(Length::Fill),
         Space::with_width(10.0),
-        text(count_label.as_str()).size(12).color(Palette::TEXT_DIM),
+        text(count_label_owned).size(12).color(Palette::TEXT_DIM),
         Space::with_width(10.0),
         button(text(view_icon).size(13))
             .on_press(Message::ViewToggled)
@@ -281,10 +276,10 @@ fn view_active_filters(app: &AkTags) -> Element<Message> {
     let mut chips: Vec<Element<Message>> = vec![];
 
     if let Some(cat) = &app.active_category {
-        chips.push(filter_chip(&format!("📁 {cat}"), Message::CategorySelected(None)));
+        chips.push(filter_chip(format!("📁 {cat}"), Message::CategorySelected(None)));
     }
     for tag in &app.active_tags {
-        chips.push(filter_chip(tag, Message::TagToggled(tag.clone())));
+        chips.push(filter_chip(tag.clone(), Message::TagToggled(tag.clone())));
     }
     chips.push(
         button(text("Clear all").size(12))
@@ -296,7 +291,7 @@ fn view_active_filters(app: &AkTags) -> Element<Message> {
     row(chips).spacing(6).padding([6, 16]).into()
 }
 
-fn filter_chip(label: &str, on_remove: Message) -> Element<Message> {
+fn filter_chip(label: String, on_remove: Message) -> Element<Message> {
     button(
         row![
             text(label).size(12),
@@ -307,7 +302,7 @@ fn filter_chip(label: &str, on_remove: Message) -> Element<Message> {
     )
     .on_press(on_remove)
     .padding([3, 10])
-    .style(|_t, _s| button::Style::Filled)
+    .style(|_t, _s| button::Style::default())
     .into()
 }
 
@@ -342,7 +337,7 @@ fn file_card(file: &FileRecord, selected: bool) -> Element<Message> {
             button(text(t).size(10))
                 .on_press(Message::TagToggled(t.clone()))
                 .padding([2, 6])
-                .style(|_t, _s| button::Style::Outlined)
+                .style(|_t, _s| button::Style::default())
                 .into()
         })
         .collect();
@@ -363,9 +358,9 @@ fn file_card(file: &FileRecord, selected: bool) -> Element<Message> {
     let btn = button(card_content)
         .on_press(Message::FileSelected(file.id))
         .style(|_t, _s| if selected {
-            button::Style::Filled
+            button::Style::default()
         } else {
-            button::Style::Outlined
+            button::Style::default()
         });
 
     // Double-click via right-click open workaround (Iced doesn't have dblclick natively)
@@ -398,7 +393,7 @@ fn file_row(file: &FileRecord, selected: bool) -> Element<Message> {
             button(text(t).size(11))
                 .on_press(Message::TagToggled(t.clone()))
                 .padding([2, 6])
-                .style(|_t, _s| button::Style::Outlined)
+                .style(|_t, _s| button::Style::default())
                 .into()
         })
         .collect();
@@ -428,9 +423,9 @@ fn file_row(file: &FileRecord, selected: bool) -> Element<Message> {
         .on_press(Message::FileSelected(file.id))
         .width(Length::Fill)
         .style(|_t, _s| if selected {
-            button::Style::Filled
+            button::Style::default()
         } else {
-            button::Style::Outlined
+            button::Style::default()
         })
         .into()
 }
@@ -448,7 +443,7 @@ fn view_detail(app: &AkTags) -> Element<Message> {
                 button(text(t).size(12))
                     .on_press(Message::TagToggled(t.clone()))
                     .padding([3, 8])
-                    .style(|_t, _s| button::Style::Outlined),
+                    .style(|_t, _s| button::Style::default()),
                 button(text("×").size(12))
                     .on_press(Message::RemoveTagFromFile(file.id, t.clone()))
                     .padding([3, 6])
@@ -469,7 +464,7 @@ fn view_detail(app: &AkTags) -> Element<Message> {
         row![
             button(text("×").size(16))
                 .on_press(Message::FileDeselected)
-                .style(|_t, _s| button::Style::Text),
+                .style(|_t, _s| button::Style::default()),
             Space::with_width(Length::Fill),
             button(text("Open →").size(13))
                 .on_press(Message::FileOpened(file.id))

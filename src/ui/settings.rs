@@ -69,7 +69,7 @@ pub fn view_first_run(app: &AkTags) -> Element<Message> {
                 )
                 .on_press(Message::FirstRunComplete)
                 .padding([12, 32])
-                .style(|_t, _s| button::Style::Filled),
+                .style(|_t, _s| button::Style::default()),
             ]
             .spacing(0)
             .align_x(Alignment::Start)
@@ -106,16 +106,16 @@ pub fn view(app: &AkTags) -> Element<Message> {
 
     let content = column![
         // ── Ollama ────────────────────────────────────────────────────────
-        section_header("Ollama Connection"),
+        section_header("Ollama Connection".to_string()),
 
-        label("Base URL"),
+        label("Base URL".to_string()),
         text_input("https://ollama.akinus21.com", &app.settings_ollama_url)
             .on_input(Message::OllamaUrlChanged)
             .padding([8, 12])
             .width(400.0),
 
         Space::with_height(12.0),
-        label("Model"),
+        label("Model".to_string()),
         text_input("gpt-oss:20b-cloud", &app.settings_ollama_model)
             .on_input(Message::OllamaModelChanged)
             .padding([8, 12])
@@ -124,7 +124,7 @@ pub fn view(app: &AkTags) -> Element<Message> {
         Space::with_height(24.0),
 
         // ── Watch Directories ─────────────────────────────────────────────
-        section_header("Watch Directories"),
+        section_header("Watch Directories".to_string()),
 
         {
             let dir_rows: Vec<Element<Message>> = app.config.watch_dirs.iter()
@@ -150,7 +150,7 @@ pub fn view(app: &AkTags) -> Element<Message> {
         Space::with_height(24.0),
 
         // ── Daemon ────────────────────────────────────────────────────────
-        section_header("Daemon"),
+        section_header("Daemon".to_string()),
 
         {
             let s = &app.daemon_stats;
@@ -176,7 +176,7 @@ pub fn view(app: &AkTags) -> Element<Message> {
             button(text("Save Settings").size(13))
                 .on_press(Message::SaveSettings)
                 .padding([8, 20])
-                .style(|_t, _s| button::Style::Filled),
+                .style(|_t, _s| button::Style::default()),
             Space::with_width(12.0),
             button(text("↺ Re-tag All Files").size(13))
                 .on_press(Message::RetagAll)
@@ -210,12 +210,7 @@ fn watch_dir_row(dir: &PathBuf) -> Element<Message> {
         button(text("×").size(14))
             .on_press(Message::WatchDirRemove(dir.clone()))
             .padding([3, 8])
-            .style(|_t, _s| button::Style {
-        background: Some(iced::Background::Color(Palette::RED)),
-        text_color: iced::Color::WHITE,
-        border_radius: iced::BorderRadius::from(8.0_f32),
-        ..Default::default()
-    }),
+            .style(|_t, _s| button::Style::default()),
     ]
     .align_y(Alignment::Center)
     .spacing(8)

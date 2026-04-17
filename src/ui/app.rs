@@ -1,5 +1,4 @@
 use iced::{
-    widget::Space,
     Element, Subscription, Task, Theme, time,
 };
 use std::path::PathBuf;
