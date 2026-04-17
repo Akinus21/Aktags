@@ -37,13 +37,16 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
+      # Capture stdout+stderr to build.log while preserving the real exit code
       - name: Build release
         id: build
-        run: cargo build --release 2>&1 | tee build.log
-        continue-on-error: true
+        run: |
+          set -o pipefail
+          cargo build --release 2>&1 | tee build.log
+        shell: bash
 
       - name: Upload artifact
-        if: steps.build.outcome == 'success'
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: aktags-linux-x86_64
@@ -51,7 +54,7 @@ jobs:
           retention-days: 30
 
       - name: Publish rolling release
-        if: steps.build.outcome == 'success' && github.ref == 'refs/heads/main'
+        if: success() && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
@@ -63,16 +66,15 @@ jobs:
 
       # On failure: POST build log to webhook so OpenCode can fix it
       - name: Notify webhook on failure
-        if: steps.build.outcome == 'failure' && github.ref == 'refs/heads/main'
+        if: failure() && github.ref == 'refs/heads/main'
         run: |
-          ERRORS=$(cat build.log | tail -100)
+          ERRORS=$(cat build.log | tail -150)
           PAYLOAD=$(jq -n \
             --arg errors "$ERRORS" \
             --arg run_url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             --arg sha "${{ github.sha }}" \
             '{errors: $errors, run_url: $run_url, sha: $sha}')
 
-          # Sign the payload with webhook secret
           SIG=$(echo -n "$PAYLOAD" | \
             openssl dgst -sha256 -hmac "${{ secrets.WEBHOOK_SECRET }}" | \
             awk '{print "sha256="$2}')
@@ -84,7 +86,3 @@ jobs:
             -H "X-Hub-Signature-256: $SIG" \
             -d "$PAYLOAD" \
             "${{ secrets.WEBHOOK_URL }}" || true
-
-      - name: Fail job if build failed
-        if: steps.build.outcome == 'failure'
-        run: exit 1
