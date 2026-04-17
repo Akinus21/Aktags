@@ -1,9 +1,9 @@
 use iced::{
     widget::{
-        button, column, container, horizontal_rule, scrollable,
-        text, text_input, Space,
+        button, column, container, horizontal_rule, row, scrollable,
+        text, Space,
     },
-    Alignment, Element, Length,
+    Alignment, Column, Element, Length, Row,
 };
 
 use super::{app::{AkTags, Message, Panel, ViewMode}, theme::*};
@@ -291,7 +291,7 @@ fn view_active_filters(app: &AkTags) -> Element<Message> {
     row(chips).spacing(6).padding([6, 16]).into()
 }
 
-fn filter_chip(label: String, on_remove: Message) -> Element<Message> {
+fn filter_chip(label: String, on_remove: Message) -> Element<'static, Message> {
     button(
         row![
             text(label).size(12),

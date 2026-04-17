@@ -107,7 +107,7 @@ pub struct AkTags {
     pub status_message: Option<String>,
 }
 
-impl Application for AkTags {
+impl iced::Application for AkTags {
     type Message = Message;
     type Theme = Theme;
     type Flags = (Config, DbPool);
