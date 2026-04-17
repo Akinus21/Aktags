@@ -1,5 +1,5 @@
 use iced::{
-    Element, Subscription, Task, Theme, time,
+    Application, Element, Subscription, Task, Theme, time,
 };
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -105,6 +105,36 @@ pub struct AkTags {
     pub first_run_watch: String,
     pub daemon_stats: DaemonStats,
     pub status_message: Option<String>,
+}
+
+impl Application for AkTags {
+    type Message = Message;
+    type Theme = Theme;
+    type Flags = (Config, DbPool);
+
+    fn new(flags: Self::Flags) -> (Self, Task<Self::Message>) {
+        Self::new(flags)
+    }
+
+    fn title(&self) -> String {
+        self.title()
+    }
+
+    fn theme(&self) -> Self::Theme {
+        self.theme()
+    }
+
+    fn update(&mut self, message: Self::Message) -> Task<Self::Message> {
+        self.update(message)
+    }
+
+    fn view(&self) -> Element<Self::Message> {
+        self.view()
+    }
+
+    fn subscription(&self) -> Subscription<Self::Message> {
+        self.subscription()
+    }
 }
 
 impl AkTags {

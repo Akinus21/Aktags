@@ -28,20 +28,9 @@ fn main() -> Result<()> {
     std::fs::create_dir_all(config::config_dir())?;
     let pool = db::create_pool(&cfg.db_path)?;
 
-    iced::application("AkTags", ui::app::AkTags::update, ui::app::AkTags::view)
-        .subscription(ui::app::AkTags::subscription)
-        .theme(ui::app::AkTags::theme)
-        .window(iced::window::Settings {
-            size: iced::Size::new(
-                cfg.ui.window_width as f32,
-                cfg.ui.window_height as f32,
-            ),
-            min_size: Some(iced::Size::new(900.0, 600.0)),
-            resizable: true,
-            ..Default::default()
-        })
-        .antialiasing(true)
-        .run_with(move || ui::app::AkTags::new((cfg, pool)))?;
+    let (app, cmd) = ui::app::AkTags::new((cfg, pool));
+
+    app.run_with(|| cmd)?;
 
     Ok(())
 }

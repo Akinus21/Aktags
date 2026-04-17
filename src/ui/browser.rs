@@ -1,7 +1,7 @@
 use iced::{
     widget::{
-        button, column, container, horizontal_rule, row, scrollable,
-        text, text_input, Column, Row, Space,
+        button, column, container, horizontal_rule, scrollable,
+        text, text_input, Space,
     },
     Alignment, Element, Length,
 };
@@ -447,12 +447,7 @@ fn view_detail(app: &AkTags) -> Element<Message> {
                 button(text("×").size(12))
                     .on_press(Message::RemoveTagFromFile(file.id, t.clone()))
                     .padding([3, 6])
-                    .style(|_t, _s| button::Style {
-        background: Some(iced::Background::Color(Palette::RED)),
-        text_color: iced::Color::WHITE,
-        border_radius: iced::BorderRadius::from(8.0_f32),
-        ..Default::default()
-    }),
+                    .style(|_t, _s| button::Style::default()),
             ]
             .spacing(2)
             .into()
