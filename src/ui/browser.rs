@@ -323,7 +323,7 @@ fn view_grid(app: &AkTags) -> Element<Message> {
     .into()
 }
 
-fn file_card(file: &FileRecord, selected: bool) -> Element<Message> {
+fn file_card(file: &FileRecord, _selected: bool) -> Element<Message> {
     let icon = file_type_icon(&file.extension);
     let name = truncate(&file.filename, 22);
     let summary = file.summary.as_deref().unwrap_or("").to_string();

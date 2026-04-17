@@ -14,13 +14,12 @@ pub fn run(cfg: Config, pool: DbPool) -> iced::Result {
     let (app, cmd) = AkTags::new((cfg, pool));
 
     let app = Arc::new(app);
-    let cmd = Arc::new(cmd);
 
     iced::application("AkTags", update, view)
         .subscription(subscription)
         .theme(|_| Theme::Dark)
         .run_with(move || {
-            (Arc::clone(&app), Arc::clone(&cmd))
+            (Arc::clone(&app), cmd)
         })
 }
 

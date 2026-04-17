@@ -161,7 +161,7 @@ pub fn view_taxonomy(app: &AkTags) -> Element<Message> {
                         .into()
                 })
                 .collect();
-            Row::with_children(cat_buttons).spacing(4).into()
+            Element::from(Row::with_children(cat_buttons).spacing(4))
         },
         Space::with_width(8.0),
         text_input("aliases (comma separated)", &app.new_tag_aliases)
@@ -233,11 +233,9 @@ fn taxonomy_tag_chip<'a>(
     row![
         text(name).size(13),
         if !aliases_text.is_empty() {
-            text(aliases_text.as_str()).size(11)
-                .color(Palette::TEXT_DIM)
-                .into()
+            Element::from(text(aliases_text.as_str()).size(11).color(Palette::TEXT_DIM))
         } else {
-            Space::with_width(0.0).into()
+            Element::from(Space::with_width(0.0))
         },
         Space::with_width(6.0),
         button(text("×").size(12))

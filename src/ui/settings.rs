@@ -130,7 +130,7 @@ pub fn view(app: &AkTags) -> Element<Message> {
             let dir_rows: Vec<Element<Message>> = app.config.watch_dirs.iter()
                 .map(|dir| watch_dir_row(dir))
                 .collect();
-            Column::with_children(dir_rows).spacing(6).into()
+            Element::from(Column::with_children(dir_rows).spacing(6))
         },
 
         Space::with_height(8.0),
