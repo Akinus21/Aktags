@@ -10,6 +10,32 @@ use crate::daemon::{Daemon, DaemonStats};
 use crate::db::{self, DbPool, FileRecord, SearchFilter};
 use crate::taxonomy;
 
+pub fn run(cfg: Config, pool: DbPool) -> iced::Result {
+    let (app, cmd) = AkTags::new((cfg, pool));
+
+    let app = Arc::new(Mutex::new(app));
+
+    iced::application("AkTags", update, view)
+        .subscription(subscription)
+        .theme(|_| Theme::Dark)
+        .run_with(move || {
+            let app = Arc::clone(&app);
+            (app, cmd)
+        })
+}
+
+fn update(app: &mut Arc<Mutex<AkTags>>, msg: Message) -> Task<Message> {
+    app.lock().unwrap().update(msg)
+}
+
+fn view(app: &Arc<Mutex<AkTags>>) -> Element<Message> {
+    app.lock().unwrap().view()
+}
+
+fn subscription(app: &Arc<Mutex<AkTags>>) -> Subscription<Message> {
+    app.lock().unwrap().subscription()
+}
+
 // ── Panels ────────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, PartialEq)]

@@ -28,9 +28,5 @@ fn main() -> Result<()> {
     std::fs::create_dir_all(config::config_dir())?;
     let pool = db::create_pool(&cfg.db_path)?;
 
-    let (app, cmd) = ui::app::AkTags::new((cfg, pool));
-
-    ui::app::AkTags::run_with(app, || cmd)?;
-
-    Ok(())
+    ui::run(cfg, pool)
 }
