@@ -479,7 +479,8 @@ impl AkTags {
             self.refresh_daemon_stats(),
         ])
     }
-}
+
+    pub fn new((config, pool): (Config, DbPool)) -> (Self, Task<Message>) {
         let is_first_run = config::needs_first_run(&config);
         let first_run_url = config.ollama_base_url.clone();
         let first_run_model = config.ollama_model.clone();
