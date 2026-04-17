@@ -230,7 +230,7 @@ fn taxonomy_tag_chip(
     };
 
     row![
-        text(name).size(13),
+        text(&name).size(13),
         if !aliases_text.is_empty() {
             Element::from(text(aliases_text).size(11).color(Palette::TEXT_DIM))
         } else {

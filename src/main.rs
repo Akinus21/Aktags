@@ -28,5 +28,7 @@ fn main() -> Result<()> {
     std::fs::create_dir_all(config::config_dir())?;
     let pool = db::create_pool(&cfg.db_path)?;
 
-    ui::app::run(cfg, pool)
+    ui::app::run(cfg, pool)?;
+
+    Ok(())
 }
