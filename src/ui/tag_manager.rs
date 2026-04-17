@@ -228,11 +228,14 @@ fn taxonomy_tag_chip(
     } else {
         format!(" → {}", meta.aliases.join(", "))
     };
+    let name_for_text = name.clone();
+    let aliases_for_text = aliases_text.clone();
+    let has_aliases = !aliases_text.is_empty();
 
     row![
-        text(&name.clone()).size(13),
-        if !aliases_text.is_empty() {
-            Element::from(text(aliases_text).size(11).color(Palette::TEXT_DIM))
+        text(name_for_text).size(13),
+        if has_aliases {
+            Element::from(text(aliases_for_text).size(11).color(Palette::TEXT_DIM))
         } else {
             Element::from(Space::with_width(0.0))
         },
