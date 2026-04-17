@@ -183,11 +183,9 @@ pub fn view(app: &AkTags) -> Element<Message> {
         ],
 
         if let Some(msg) = &app.status_message {
-            text(msg).size(12)
-                .color(Palette::GREEN)
-                .into()
+            Element::from(text(msg).size(12).color(Palette::GREEN))
         } else {
-            Space::with_height(0.0).into()
+            Element::from(Space::with_height(0.0))
         },
     ]
     .spacing(4)
