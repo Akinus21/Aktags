@@ -15,23 +15,23 @@ pub fn run(cfg: Config, pool: DbPool) -> iced::Result {
 
     let app = Arc::new(app);
 
-    iced::application("AkTags", update, view)
-        .subscription(subscription)
+    iced::application("AkTags", app_update, app_view)
+        .subscription(app_subscription)
         .theme(|_| Theme::Dark)
         .run_with(move || {
             (Arc::clone(&app), cmd)
         })
 }
 
-fn update(app: &mut Arc<AkTags>, msg: Message) -> Task<Message> {
+fn app_update(app: &mut Arc<AkTags>, msg: Message) -> Task<Message> {
     Arc::get_mut(app).unwrap().update(msg)
 }
 
-fn view(app: &Arc<AkTags>) -> Element<Message> {
+fn app_view(app: &Arc<AkTags>) -> Element<Message> {
     (*app).view()
 }
 
-fn subscription(app: &Arc<AkTags>) -> Subscription<Message> {
+fn app_subscription(app: &Arc<AkTags>) -> Subscription<Message> {
     (*app).subscription()
 }
 

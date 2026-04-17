@@ -160,13 +160,12 @@ pub fn view(app: &AkTags) -> Element<Message> {
                 stat_row("Errors", &s.errors.to_string()),
                 stat_row("Queue", &s.queue_size.to_string()),
                 if let Some(f) = &s.current_file {
-                    stat_row("Current", f)
+                    Element::from(stat_row("Current", f))
                 } else {
-                    Space::with_height(0.0).into()
+                    Element::from(Space::with_height(0.0))
                 },
             ]
             .spacing(4)
-            .into()
         },
 
         Space::with_height(24.0),
@@ -206,7 +205,7 @@ pub fn view(app: &AkTags) -> Element<Message> {
 fn watch_dir_row(dir: &PathBuf) -> Element<Message> {
     let dir_str = dir.to_string_lossy().to_string();
     row![
-        text(&dir_str).size(13).width(Length::Fill),
+        text(dir_str).size(13).width(Length::Fill),
         button(text("×").size(14))
             .on_press(Message::WatchDirRemove(dir.clone()))
             .padding([3, 8])

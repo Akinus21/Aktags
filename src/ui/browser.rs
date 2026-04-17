@@ -377,7 +377,7 @@ fn view_list(app: &AkTags) -> Element<Message> {
         .into()
 }
 
-fn file_row(file: &FileRecord, selected: bool) -> Element<Message> {
+fn file_row(file: &FileRecord, _selected: bool) -> Element<Message> {
     let icon = file_type_icon(&file.extension);
     let tags: Vec<Element<Message>> = file.tags.iter().take(4)
         .map(|t| {
