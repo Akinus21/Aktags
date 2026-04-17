@@ -1,9 +1,9 @@
 use iced::{
     widget::{
         button, column, container, horizontal_rule, row, scrollable,
-        text, text_input, wrap, Column, Row, Space,
+        text, text_input, Column, Row, Space,
     },
-    Alignment, Element, Length, Padding,
+    Alignment, Element, Length,
 };
 
 use super::{app::{AkTags, Message, Panel, ViewMode}, theme::*};
@@ -53,23 +53,23 @@ fn view_header(app: &AkTags) -> Element<Message> {
     };
 
     row![
-        text("AkTags").size(20).style(iced::theme::Text::Color(Palette::ACCENT)),
+        text("AkTags").size(20).color(Palette::ACCENT),
         Space::with_width(12.0),
         text(if app.daemon_stats.running && !app.config.ollama_base_url.is_empty() { "●" } else { "●" })
             .size(12)
-            .style(iced::theme::Text::Color(status_color)),
+            .color(status_color),
         Space::with_width(8.0),
-        text(&status_label).size(12).style(iced::theme::Text::Color(Palette::TEXT_DIM)),
+        text(&status_label).size(12).color(Palette::TEXT_DIM),
         Space::with_width(8.0),
-        text(&queue_badge).size(11).style(iced::theme::Text::Color(Palette::YELLOW)),
+        text(&queue_badge).size(11).color(Palette::YELLOW),
         Space::with_width(Length::Fill),
         nav_button("↺ Re-tag All", Message::RetagAll),
         Space::with_width(8.0),
         nav_button("⚙ Settings", Message::SwitchPanel(Panel::Settings)),
     ]
-    .padding(Padding::from([0, 20]))
+    .padding([0, 20])
     .height(HEADER_H)
-    .align_items(Alignment::Center)
+    .align_y(Alignment::Center)
     .width(Length::Fill)
     .into()
 }
@@ -96,9 +96,9 @@ fn view_nav(app: &AkTags) -> Element<Message> {
         tab_button(&pending_label,    Panel::Pending,  app),
         tab_button("🗂 Tag Library",  Panel::Taxonomy, app),
     ]
-    .padding(Padding::from([0, 20]))
+    .padding([0, 20])
     .height(42.0)
-    .align_items(Alignment::End)
+    .align_y(Alignment::End)
     .spacing(4)
     .into()
 }
@@ -106,19 +106,11 @@ fn view_nav(app: &AkTags) -> Element<Message> {
 fn tab_button<'a>(label: &'a str, panel: Panel, app: &'a AkTags) -> Element<'a, Message> {
     let active = app.panel == panel;
     button(
-        text(label).size(13).style(if active {
-            iced::theme::Text::Color(Palette::ACCENT)
-        } else {
-            iced::theme::Text::Color(Palette::TEXT_DIM)
-        })
+        text(label).size(13).color(if active { Palette::ACCENT } else { Palette::TEXT_DIM })
     )
     .on_press(Message::SwitchPanel(panel))
     .padding([8, 18])
-    .style(if active {
-        iced::theme::Button::Primary
-    } else {
-        iced::theme::Button::Text
-    })
+    .style(if active { btn_primary() } else { btn_text() })
     .into()
 }
 
@@ -152,23 +144,19 @@ fn view_sidebar(app: &AkTags) -> Element<Message> {
             button(text(&label).size(12))
                 .on_press(Message::TagToggled(tag.clone()))
                 .padding([3, 10])
-                .style(if active {
-                    iced::theme::Button::Primary
-                } else {
-                    iced::theme::Button::Secondary
-                })
+                .style(if active { btn_primary() } else { btn_secondary() })
                 .into()
         })
         .collect();
 
     let sidebar_content = column![
         // Categories section
-        text("Categories").size(11).style(iced::theme::Text::Color(Palette::TEXT_DIM)),
+        text("Categories").size(11).color(Palette::TEXT_DIM),
         Space::with_height(8.0),
         Column::with_children(cat_items).spacing(2),
         horizontal_rule(1),
         Space::with_height(8.0),
-        text("Tags").size(11).style(iced::theme::Text::Color(Palette::TEXT_DIM)),
+        text("Tags").size(11).color(Palette::TEXT_DIM),
         Space::with_height(8.0),
         scrollable(
             Row::with_children(tag_items)
@@ -195,25 +183,17 @@ fn category_item<'a>(
     let is_active = active == &cat;
     button(
         row![
-            text(label).size(13).style(if is_active {
-                iced::theme::Text::Color(Palette::ACCENT)
-            } else {
-                iced::theme::Text::Default
-            }),
+            text(label).size(13).color(if is_active { Palette::ACCENT } else { Palette::TEXT }),
             Space::with_width(Length::Fill),
             text(count.to_string()).size(11)
-                .style(iced::theme::Text::Color(Palette::TEXT_DIM)),
+                .color(Palette::TEXT_DIM),
         ]
-        .align_items(Alignment::Center)
+        .align_y(Alignment::Center)
     )
     .on_press(Message::CategorySelected(cat))
     .padding([5, 10])
     .width(Length::Fill)
-    .style(if is_active {
-        iced::theme::Button::Primary
-    } else {
-        iced::theme::Button::Text
-    })
+    .style(if is_active { btn_primary() } else { btn_text() })
     .into()
 }
 
@@ -262,14 +242,14 @@ fn view_toolbar(app: &AkTags) -> Element<Message> {
             .padding([8, 14])
             .width(Length::Fill),
         Space::with_width(10.0),
-        text(&count_label).size(12).style(iced::theme::Text::Color(Palette::TEXT_DIM)),
+        text(&count_label).size(12).color(Palette::TEXT_DIM),
         Space::with_width(10.0),
         button(text(view_icon).size(13))
             .on_press(Message::ViewToggled)
             .padding([6, 10]),
     ]
-    .padding(Padding::from([12, 16]))
-    .align_items(Alignment::Center)
+    .padding([12, 16])
+    .align_y(Alignment::Center)
     .into()
 }
 
@@ -293,7 +273,7 @@ fn view_active_filters(app: &AkTags) -> Element<Message> {
             .into()
     );
 
-    row(chips).spacing(6).padding(Padding::from([6, 16])).into()
+    row(chips).spacing(6).padding([6, 16]).into()
 }
 
 fn filter_chip(label: &str, on_remove: Message) -> Element<Message> {
@@ -303,11 +283,11 @@ fn filter_chip(label: &str, on_remove: Message) -> Element<Message> {
             Space::with_width(4.0),
             text("×").size(14),
         ]
-        .align_items(Alignment::Center)
+        .align_y(Alignment::Center)
     )
     .on_press(on_remove)
     .padding([3, 10])
-    .style(iced::theme::Button::Primary)
+    .style(btn_primary())
     .into()
 }
 
@@ -323,9 +303,11 @@ fn view_grid(app: &AkTags) -> Element<Message> {
         .collect();
 
     container(
-        wrap::Wrapping::with_elements(cards)
-            .spacing(SPACING)
-            .padding(PADDING)
+        scrollable(
+            Column::with_children(cards)
+                .spacing(SPACING)
+                .padding(PADDING)
+        )
     )
     .width(Length::Fill)
     .into()
@@ -342,7 +324,7 @@ fn file_card(file: &FileRecord, selected: bool) -> Element<Message> {
             button(text(t).size(10))
                 .on_press(Message::TagToggled(t.clone()))
                 .padding([2, 6])
-                .style(iced::theme::Button::Secondary)
+                .style(btn_secondary())
                 .into()
         })
         .collect();
@@ -350,8 +332,8 @@ fn file_card(file: &FileRecord, selected: bool) -> Element<Message> {
     let card_content = column![
         text(icon).size(32),
         Space::with_height(8.0),
-        text(name).size(12).style(iced::theme::Text::Color(Palette::TEXT)),
-        text(summary_short).size(11).style(iced::theme::Text::Color(Palette::TEXT_DIM)),
+        text(name).size(12).color(Palette::TEXT),
+        text(summary_short).size(11).color(Palette::TEXT_DIM),
         Space::with_height(4.0),
         Row::with_children(tags).spacing(3),
     ]
@@ -362,45 +344,7 @@ fn file_card(file: &FileRecord, selected: bool) -> Element<Message> {
 
     let btn = button(card_content)
         .on_press(Message::FileSelected(file.id))
-        .style(if selected {
-            iced::theme::Button::Primary
-        } else {
-            iced::theme::Button::Secondary
-        });
-
-    // Double-click via right-click open workaround (Iced doesn't have dblclick natively)
-    // Single click = select, Ctrl+O or Enter = open
-    btn.into()
-}
-
-// ── List view ─────────────────────────────────────────────────────────────────
-
-fn view_list(app: &AkTags) -> Element<Message> {
-    if app.files.is_empty() {
-        return empty_state("No files found", "Try adjusting your search or filters.");
-    }
-
-    let rows: Vec<Element<Message>> = app.files.iter()
-        .map(|f| file_row(f, app.selected_file.as_ref().map(|s| s.id) == Some(f.id)))
-        .collect();
-
-    Column::with_children(rows)
-        .spacing(4)
-        .padding(PADDING)
-        .width(Length::Fill)
-        .into()
-}
-
-fn file_row(file: &FileRecord, selected: bool) -> Element<Message> {
-    let icon = file_type_icon(&file.extension);
-    let tags: Vec<Element<Message>> = file.tags.iter().take(4)
-        .map(|t| {
-            button(text(t).size(11))
-                .on_press(Message::TagToggled(t.clone()))
-                .padding([2, 6])
-                .style(iced::theme::Button::Secondary)
-                .into()
-        })
+.style(if selected { btn_primary() } else { btn_secondary() })
         .collect();
 
     let row_content = row![
@@ -408,30 +352,26 @@ fn file_row(file: &FileRecord, selected: bool) -> Element<Message> {
         column![
             text(&file.filename).size(13),
             text(file.summary.as_deref().unwrap_or("")).size(11)
-                .style(iced::theme::Text::Color(Palette::TEXT_DIM)),
+                .color(Palette::TEXT_DIM),
         ]
         .spacing(2)
         .width(Length::Fill),
         Row::with_children(tags).spacing(3),
         text(&file.category).size(11)
-            .style(iced::theme::Text::Color(Palette::TEXT_DIM))
+            .color(Palette::TEXT_DIM)
             .width(80.0),
         text(fmt_size(file.size_bytes)).size(11)
-            .style(iced::theme::Text::Color(Palette::TEXT_DIM))
+            .color(Palette::TEXT_DIM)
             .width(70.0),
     ]
     .spacing(12)
-    .align_items(Alignment::Center)
+    .align_y(Alignment::Center)
     .padding([8, 12]);
 
     button(row_content)
         .on_press(Message::FileSelected(file.id))
         .width(Length::Fill)
-        .style(if selected {
-            iced::theme::Button::Primary
-        } else {
-            iced::theme::Button::Secondary
-        })
+        .style(if selected { btn_primary() } else { btn_secondary() })
         .into()
 }
 
@@ -448,11 +388,11 @@ fn view_detail(app: &AkTags) -> Element<Message> {
                 button(text(t).size(12))
                     .on_press(Message::TagToggled(t.clone()))
                     .padding([3, 8])
-                    .style(iced::theme::Button::Secondary),
+                    .style(btn_secondary()),
                 button(text("×").size(12))
                     .on_press(Message::RemoveTagFromFile(file.id, t.clone()))
                     .padding([3, 6])
-                    .style(iced::theme::Button::Destructive),
+                    .style(btn_destructive()),
             ]
             .spacing(2)
             .into()
@@ -464,35 +404,35 @@ fn view_detail(app: &AkTags) -> Element<Message> {
         row![
             button(text("×").size(16))
                 .on_press(Message::FileDeselected)
-                .style(iced::theme::Button::Text),
+                .style(btn_text()),
             Space::with_width(Length::Fill),
             button(text("Open →").size(13))
                 .on_press(Message::FileOpened(file.id))
                 .padding([6, 12]),
         ]
-        .align_items(Alignment::Center),
+        .align_y(Alignment::Center),
         Space::with_height(12.0),
 
         // File icon + name
         text(file_type_icon(&file.extension)).size(40),
         text(&file.filename).size(14),
         text(&file.category).size(11)
-            .style(iced::theme::Text::Color(Palette::TEXT_DIM)),
+            .color(Palette::TEXT_DIM),
         Space::with_height(4.0),
         text(fmt_size(file.size_bytes)).size(11)
-            .style(iced::theme::Text::Color(Palette::TEXT_DIM)),
+            .color(Palette::TEXT_DIM),
         Space::with_height(12.0),
 
         // Summary
         text("Summary").size(11)
-            .style(iced::theme::Text::Color(Palette::TEXT_DIM)),
+            .color(Palette::TEXT_DIM),
         text(file.summary.as_deref().unwrap_or("No summary yet"))
             .size(12),
         Space::with_height(12.0),
 
         // Tags
         text("Tags").size(11)
-            .style(iced::theme::Text::Color(Palette::TEXT_DIM)),
+            .color(Palette::TEXT_DIM),
         Row::with_children(tags).spacing(4),
         Space::with_height(8.0),
 
@@ -513,9 +453,9 @@ fn view_detail(app: &AkTags) -> Element<Message> {
 
         // Path
         text("Path").size(11)
-            .style(iced::theme::Text::Color(Palette::TEXT_DIM)),
+            .color(Palette::TEXT_DIM),
         text(&file.path).size(11)
-            .style(iced::theme::Text::Color(Palette::TEXT_DIM)),
+            .color(Palette::TEXT_DIM),
     ]
     .spacing(4)
     .padding(16);
@@ -535,14 +475,14 @@ fn empty_state(title: &str, subtitle: &str) -> Element<Message> {
             Space::with_height(12.0),
             text(title).size(16),
             text(subtitle).size(13)
-                .style(iced::theme::Text::Color(Palette::TEXT_DIM)),
+                .color(Palette::TEXT_DIM),
         ]
         .spacing(8)
-        .align_items(Alignment::Center)
+        .align_x(Alignment::Center)
         .padding(60),
     )
-    .center_x()
-    .center_y()
+    .center_x(iced::Alignment::Center)
+    .center_y(iced::Alignment::Center)
     .width(Length::Fill)
     .height(Length::Fill)
     .into()

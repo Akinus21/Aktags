@@ -1,6 +1,6 @@
 use iced::{
-    widget::{button, column, container, row, scrollable, text, text_input, wrap, Column, Row, Space},
-    Alignment, Element, Length, Padding,
+    widget::{button, column, container, row, scrollable, text, text_input, wrapping, Column, Row, Space},
+    Alignment, Element, Length,
 };
 
 use super::{app::{AkTags, Message, Panel}, theme::*};
@@ -15,7 +15,7 @@ pub fn view_pending(app: &AkTags) -> Element<Message> {
             text("🔖 Pending Tag Approvals").size(16),
             text("Tags proposed by AI not yet in your library. Approve, reject, or merge.")
                 .size(12)
-                .style(iced::theme::Text::Color(Palette::TEXT_DIM)),
+                .color(Palette::TEXT_DIM),
         ],
         Space::with_width(Length::Fill),
         button(text("✓ Approve All").size(13))
@@ -26,8 +26,8 @@ pub fn view_pending(app: &AkTags) -> Element<Message> {
             .on_press(Message::RejectAll)
             .padding([6, 14]),
     ]
-    .align_items(Alignment::Center)
-    .padding(Padding::from([16, 20]));
+    .align_y(Alignment::Center)
+    .padding([16, 20]);
 
     let items: Vec<Element<Message>> = if app.pending.is_empty() {
         vec![
@@ -38,13 +38,13 @@ pub fn view_pending(app: &AkTags) -> Element<Message> {
                     text("No pending tags").size(16),
                     text("All AI-proposed tags have been reviewed.")
                         .size(13)
-                        .style(iced::theme::Text::Color(Palette::TEXT_DIM)),
+                        .color(Palette::TEXT_DIM),
                 ]
                 .spacing(8)
-                .align_items(Alignment::Center)
+                .align_y(Alignment::Center)
                 .padding(60),
             )
-            .center_x()
+            .center_x(Alignment::Center)
             .width(Length::Fill)
             .into(),
         ]
@@ -57,7 +57,7 @@ pub fn view_pending(app: &AkTags) -> Element<Message> {
         scrollable(
             Column::with_children(items)
                 .spacing(10)
-                .padding(Padding::from([0, 20]))
+                .padding([0, 20])
                 .width(Length::Fill)
         )
         .height(Length::Fill),
@@ -95,28 +95,32 @@ fn pending_card<'a>(
     column![
         // Tag name + file count
         row![
-            text(tag).size(16).style(iced::theme::Text::Color(Palette::ORANGE)),
+            text(tag).size(16).color(Palette::ORANGE),
             Space::with_width(12.0),
             text(format!("{} file{}", meta.file_count, if meta.file_count != 1 { "s" } else { "" }))
                 .size(12)
-                .style(iced::theme::Text::Color(Palette::TEXT_DIM)),
+                .color(Palette::TEXT_DIM),
             Space::with_width(Length::Fill),
             button(text("✗ Reject").size(12))
                 .on_press(Message::PendingReject(tag.to_string()))
                 .padding([4, 10]),
         ]
-        .align_items(Alignment::Center),
+        .align_y(Alignment::Center),
 
         // Example files
         text(files_preview).size(11)
-            .style(iced::theme::Text::Color(Palette::TEXT_DIM)),
+            .color(Palette::TEXT_DIM),
 
         Space::with_height(8.0),
 
         // Approve with category
         text("Approve as:").size(11)
-            .style(iced::theme::Text::Color(Palette::TEXT_DIM)),
-        wrap::Wrapping::with_elements(cat_buttons).spacing(6.0),
+            .color(Palette::TEXT_DIM),
+        wrapping::Builder::default()
+                .spacing(6.0)
+                .children(cat_buttons)
+                .build()
+                .into(),
 
         Space::with_height(8.0),
 
@@ -134,7 +138,7 @@ fn pending_card<'a>(
                 ))
                 .padding([5, 10]),
         ]
-        .align_items(Alignment::Center),
+        .align_y(Alignment::Center),
     ]
     .spacing(6)
     .padding(16)
@@ -163,11 +167,7 @@ pub fn view_taxonomy(app: &AkTags) -> Element<Message> {
                     button(text(cat).size(11))
                         .on_press(Message::NewTagCategoryChanged(cat.to_string()))
                         .padding([4, 8])
-                        .style(if active {
-                            iced::theme::Button::Primary
-                        } else {
-                            iced::theme::Button::Secondary
-                        })
+                        .style(if active { btn_primary() } else { btn_secondary() })
                         .into()
                 })
                 .collect();
@@ -183,8 +183,8 @@ pub fn view_taxonomy(app: &AkTags) -> Element<Message> {
             .on_press(Message::AddNewTag)
             .padding([6, 14]),
     ]
-    .align_items(Alignment::Center)
-    .padding(Padding::from([16, 20]));
+    .align_y(Alignment::Center)
+    .padding([16, 20]);
 
     // Group tags by category
     let mut by_category: std::collections::HashMap<String, Vec<&(String, crate::taxonomy::TagMeta)>> =
@@ -207,9 +207,13 @@ pub fn view_taxonomy(app: &AkTags) -> Element<Message> {
             column![
                 text(format!("{cat} ({})", tags.len()))
                     .size(11)
-                    .style(iced::theme::Text::Color(Palette::TEXT_DIM)),
+                    .color(Palette::TEXT_DIM),
                 Space::with_height(8.0),
-                wrap::Wrapping::with_elements(tag_chips).spacing(8.0),
+                wrapping::Builder::default()
+                .spacing(8.0)
+                .children(tag_chips)
+                .build()
+                .into(),
                 Space::with_height(16.0),
             ]
             .spacing(0)
@@ -221,7 +225,7 @@ pub fn view_taxonomy(app: &AkTags) -> Element<Message> {
         header,
         scrollable(
             Column::with_children(sections)
-                .padding(Padding::from([0, 20]))
+                .padding([0, 20])
                 .width(Length::Fill)
         )
         .height(Length::Fill),
@@ -245,7 +249,7 @@ fn taxonomy_tag_chip<'a>(
         text(name).size(13),
         if !aliases_text.is_empty() {
             text(&aliases_text).size(11)
-                .style(iced::theme::Text::Color(Palette::TEXT_DIM))
+                .color(Palette::TEXT_DIM)
                 .into()
         } else {
             Space::with_width(0.0).into()
@@ -254,9 +258,9 @@ fn taxonomy_tag_chip<'a>(
         button(text("×").size(12))
             .on_press(Message::RemoveTaxonomyTag(name.to_string()))
             .padding([2, 5])
-            .style(iced::theme::Button::Text),
+            .style(btn_text()),
     ]
-    .align_items(Alignment::Center)
+    .align_y(Alignment::Center)
     .spacing(2)
     .into()
 }

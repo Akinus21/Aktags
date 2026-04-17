@@ -1,6 +1,6 @@
 use iced::{
     widget::{button, column, container, row, scrollable, text, text_input, Column, Space},
-    Alignment, Element, Length, Padding,
+    Alignment, Element, Length,
 };
 use std::path::PathBuf;
 
@@ -15,17 +15,17 @@ pub fn view_first_run(app: &AkTags) -> Element<Message> {
         container(
             column![
                 text("Welcome to AkTags").size(28)
-                    .style(iced::theme::Text::Color(Palette::ACCENT)),
+                    .color(Palette::ACCENT),
                 Space::with_height(8.0),
                 text("AI-powered tag-based file browser")
                     .size(14)
-                    .style(iced::theme::Text::Color(Palette::TEXT_DIM)),
+                    .color(Palette::TEXT_DIM),
 
                 Space::with_height(32.0),
 
                 // Ollama URL
                 text("Ollama Base URL").size(12)
-                    .style(iced::theme::Text::Color(Palette::TEXT_DIM)),
+                    .color(Palette::TEXT_DIM),
                 Space::with_height(6.0),
                 text_input("https://ollama.akinus21.com", &app.first_run_url)
                     .on_input(Message::FirstRunOllamaUrlChanged)
@@ -36,11 +36,11 @@ pub fn view_first_run(app: &AkTags) -> Element<Message> {
 
                 // Model
                 text("Ollama Model").size(12)
-                    .style(iced::theme::Text::Color(Palette::TEXT_DIM)),
+                    .color(Palette::TEXT_DIM),
                 Space::with_height(4.0),
                 text("Run 'ollama list' on your server to see available models.")
                     .size(11)
-                    .style(iced::theme::Text::Color(Palette::TEXT_DIM)),
+                    .color(Palette::TEXT_DIM),
                 Space::with_height(6.0),
                 text_input("gpt-oss:20b-cloud", &app.first_run_model)
                     .on_input(Message::FirstRunModelChanged)
@@ -51,11 +51,11 @@ pub fn view_first_run(app: &AkTags) -> Element<Message> {
 
                 // Watch directory
                 text("Watch Directory").size(12)
-                    .style(iced::theme::Text::Color(Palette::TEXT_DIM)),
+                    .color(Palette::TEXT_DIM),
                 Space::with_height(4.0),
                 text("AkTags will monitor this folder and tag all files automatically.")
                     .size(11)
-                    .style(iced::theme::Text::Color(Palette::TEXT_DIM)),
+                    .color(Palette::TEXT_DIM),
                 Space::with_height(6.0),
                 text_input("~/Documents", &app.first_run_watch)
                     .on_input(Message::FirstRunWatchDirChanged)
@@ -69,23 +69,23 @@ pub fn view_first_run(app: &AkTags) -> Element<Message> {
                 )
                 .on_press(Message::FirstRunComplete)
                 .padding([12, 32])
-                .style(iced::theme::Button::Primary),
+                .style(btn_primary()),
             ]
             .spacing(0)
-            .align_items(Alignment::Start)
+            .align_x(Alignment::Start)
             .padding(40)
         )
         .width(500.0),
 
         Space::with_height(Length::Fill),
     ]
-    .align_items(Alignment::Center)
+    .align_x(Alignment::Center)
     .width(Length::Fill)
     .height(Length::Fill);
 
     container(content)
-        .center_x()
-        .center_y()
+        .center_x(Alignment::Center)
+        .center_y(Alignment::Center)
         .width(Length::Fill)
         .height(Length::Fill)
         .into()
@@ -101,8 +101,8 @@ pub fn view(app: &AkTags) -> Element<Message> {
             .on_press(Message::SwitchPanel(Panel::Browser))
             .padding([6, 14]),
     ]
-    .align_items(Alignment::Center)
-    .padding(Padding::from([16, 20]));
+    .align_x(Alignment::Center)
+    .padding([16, 20]);
 
     let content = column![
         // ── Ollama ────────────────────────────────────────────────────────
@@ -145,7 +145,7 @@ pub fn view(app: &AkTags) -> Element<Message> {
                 .on_press(Message::WatchDirAdd(app.settings_watch_dir_input.clone()))
                 .padding([8, 14]),
         ]
-        .align_items(Alignment::Center),
+        .align_x(Alignment::Center),
 
         Space::with_height(24.0),
 
@@ -176,7 +176,7 @@ pub fn view(app: &AkTags) -> Element<Message> {
             button(text("Save Settings").size(13))
                 .on_press(Message::SaveSettings)
                 .padding([8, 20])
-                .style(iced::theme::Button::Primary),
+                .style(btn_primary()),
             Space::with_width(12.0),
             button(text("↺ Re-tag All Files").size(13))
                 .on_press(Message::RetagAll)
@@ -185,14 +185,14 @@ pub fn view(app: &AkTags) -> Element<Message> {
 
         if let Some(msg) = &app.status_message {
             text(msg).size(12)
-                .style(iced::theme::Text::Color(Palette::GREEN))
+                .color(Palette::GREEN)
                 .into()
         } else {
             Space::with_height(0.0).into()
         },
     ]
     .spacing(4)
-    .padding(Padding::from([0, 20, 20, 20]));
+    .padding([0, 20, 20, 20]);
 
     column![
         header,
@@ -210,9 +210,9 @@ fn watch_dir_row(dir: &PathBuf) -> Element<Message> {
         button(text("×").size(14))
             .on_press(Message::WatchDirRemove(dir.clone()))
             .padding([3, 8])
-            .style(iced::theme::Button::Destructive),
+            .style(btn_destructive()),
     ]
-    .align_items(Alignment::Center)
+    .align_x(Alignment::Center)
     .spacing(8)
     .padding([6, 10])
     .into()
@@ -220,7 +220,7 @@ fn watch_dir_row(dir: &PathBuf) -> Element<Message> {
 
 fn section_header(title: &str) -> Element<'static, Message> {
     column![
-        text(title).size(13).style(iced::theme::Text::Color(Palette::ACCENT2)),
+        text(title).size(13).color(Palette::ACCENT2),
         Space::with_height(8.0),
     ]
     .into()
@@ -228,14 +228,14 @@ fn section_header(title: &str) -> Element<'static, Message> {
 
 fn label(s: &str) -> Element<'static, Message> {
     text(s).size(11)
-        .style(iced::theme::Text::Color(Palette::TEXT_DIM))
+        .color(Palette::TEXT_DIM)
         .into()
 }
 
 fn stat_row<'a>(label: &'a str, value: &'a str) -> Element<'a, Message> {
     row![
         text(label).size(12)
-            .style(iced::theme::Text::Color(Palette::TEXT_DIM))
+            .color(Palette::TEXT_DIM)
             .width(100.0),
         text(value).size(12),
     ]
