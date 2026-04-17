@@ -9,14 +9,14 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-unknown-linux-gnu
 
       - name: Install system dependencies
         run: |
@@ -25,6 +25,7 @@ jobs:
             libgtk-3-dev \
             libxkbcommon-dev \
             libwayland-dev \
+            libxkbcommon-x11-dev \
             pkg-config
 
       - name: Cache cargo
@@ -37,17 +38,53 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Build release
-        run: cargo build --release
+        id: build
+        run: cargo build --release 2>&1 | tee build.log
+        continue-on-error: true
 
-      - name: Upload binary artifact
+      - name: Upload artifact
+        if: steps.build.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: aktags-linux-x86_64
           path: target/release/aktags
           retention-days: 30
 
-      - name: Create release on tag
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Publish rolling release
+        if: steps.build.outcome == 'success' && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: latest
+          name: "Latest Build"
+          prerelease: true
           files: target/release/aktags
+          body: |
+            Automated build from ${{ github.sha }}
+
+      # On failure: POST build log to webhook so OpenCode can fix it
+      - name: Notify webhook on failure
+        if: steps.build.outcome == 'failure' && github.ref == 'refs/heads/main'
+        run: |
+          ERRORS=$(cat build.log | tail -100)
+          PAYLOAD=$(jq -n \
+            --arg errors "$ERRORS" \
+            --arg run_url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg sha "${{ github.sha }}" \
+            '{errors: $errors, run_url: $run_url, sha: $sha}')
+
+          # Sign the payload with webhook secret
+          SIG=$(echo -n "$PAYLOAD" | \
+            openssl dgst -sha256 -hmac "${{ secrets.WEBHOOK_SECRET }}" | \
+            awk '{print "sha256="$2}')
+
+          curl -fsSL \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "X-GitHub-Event: build_failure" \
+            -H "X-Hub-Signature-256: $SIG" \
+            -d "$PAYLOAD" \
+            "${{ secrets.WEBHOOK_URL }}" || true
+
+      - name: Fail job if build failed
+        if: steps.build.outcome == 'failure'
+        run: exit 1
