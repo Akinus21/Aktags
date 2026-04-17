@@ -13,27 +13,27 @@ use crate::taxonomy;
 pub fn run(cfg: Config, pool: DbPool) -> iced::Result {
     let (app, cmd) = AkTags::new((cfg, pool));
 
-    let app = Arc::new(Mutex::new(app));
+    let app = Arc::new(app);
+    let cmd = Arc::new(cmd);
 
     iced::application("AkTags", update, view)
         .subscription(subscription)
         .theme(|_| Theme::Dark)
         .run_with(move || {
-            let app = Arc::clone(&app);
-            (app, cmd)
+            (Arc::clone(&app), Arc::clone(&cmd))
         })
 }
 
-fn update(app: &mut Arc<Mutex<AkTags>>, msg: Message) -> Task<Message> {
-    app.lock().unwrap().update(msg)
+fn update(app: &mut Arc<AkTags>, msg: Message) -> Task<Message> {
+    Arc::get_mut(app).unwrap().update(msg)
 }
 
-fn view(app: &Arc<Mutex<AkTags>>) -> Element<Message> {
-    app.lock().unwrap().view()
+fn view(app: &Arc<AkTags>) -> Element<Message> {
+    (*app).view()
 }
 
-fn subscription(app: &Arc<Mutex<AkTags>>) -> Subscription<Message> {
-    app.lock().unwrap().subscription()
+fn subscription(app: &Arc<AkTags>) -> Subscription<Message> {
+    (*app).subscription()
 }
 
 // ── Panels ────────────────────────────────────────────────────────────────────

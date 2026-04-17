@@ -233,7 +233,7 @@ fn taxonomy_tag_chip<'a>(
     row![
         text(name).size(13),
         if !aliases_text.is_empty() {
-            text(&aliases_text).size(11)
+            text(aliases_text.as_str()).size(11)
                 .color(Palette::TEXT_DIM)
                 .into()
         } else {

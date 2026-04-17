@@ -94,12 +94,10 @@ fn view_nav(app: &AkTags) -> Element<Message> {
         String::from("🔖 Pending")
     };
 
-    let pending_label_owned = pending_label;
-
     row![
-        tab_button("📁 Files",       Panel::Browser,  app),
-        tab_button(pending_label_owned.as_str(), Panel::Pending,  app),
-        tab_button("🗂 Tag Library",  Panel::Taxonomy, app),
+        tab_button(String::from("📁 Files"),       Panel::Browser,  app),
+        tab_button(pending_label.clone(), Panel::Pending,  app),
+        tab_button(String::from("🗂 Tag Library"),  Panel::Taxonomy, app),
     ]
     .padding([0, 20])
     .height(42.0)
@@ -108,7 +106,7 @@ fn view_nav(app: &AkTags) -> Element<Message> {
     .into()
 }
 
-fn tab_button<'a>(label: &'a str, panel: Panel, app: &'a AkTags) -> Element<'a, Message> {
+fn tab_button(label: String, panel: Panel, app: &AkTags) -> Element<Message> {
     let active = app.panel == panel;
     button(
         text(label).size(13).color(if active {
@@ -131,15 +129,15 @@ fn view_sidebar(app: &AkTags) -> Element<Message> {
 
     // Categories
     let mut cat_items: Vec<Element<Message>> = vec![
-        category_item("All Files", total, None, &app.active_category),
+        category_item(String::from("All Files"), total, None, app.active_category.clone()),
     ];
     if let Some(s) = stats {
         for (cat, count) in &s.by_category {
             cat_items.push(category_item(
-                &format!("{} {cat}", category_icon(cat)),
+                format!("{} {cat}", category_icon(cat)),
                 *count,
                 Some(cat.clone()),
-                &app.active_category,
+                app.active_category.clone(),
             ));
         }
     }
@@ -148,9 +146,8 @@ fn view_sidebar(app: &AkTags) -> Element<Message> {
     let tag_items: Vec<Element<Message>> = app.all_tags.iter()
         .take(100)
         .map(|(tag, count)| {
-            let active = app.active_tags.contains(tag);
             let label = format!("{tag} {count}");
-            button(text(&label).size(12))
+            button(text(label).size(12))
                 .on_press(Message::TagToggled(tag.clone()))
                 .padding([3, 10])
                 .style(|_t, _s| button::Style::default())
@@ -183,13 +180,13 @@ fn view_sidebar(app: &AkTags) -> Element<Message> {
         .into()
 }
 
-fn category_item<'a>(
-    label: &'a str,
+fn category_item(
+    label: String,
     count: i64,
     cat: Option<String>,
-    active: &'a Option<String>,
-) -> Element<'a, Message> {
-    let is_active = active == &cat;
+    active: Option<String>,
+) -> Element<Message> {
+    let is_active = active == cat;
     button(
         row![
             text(label).size(13).color(if is_active {
@@ -357,14 +354,8 @@ fn file_card(file: &FileRecord, selected: bool) -> Element<Message> {
 
     let btn = button(card_content)
         .on_press(Message::FileSelected(file.id))
-        .style(|_t, _s| if selected {
-            button::Style::default()
-        } else {
-            button::Style::default()
-        });
+        .style(|_t, _s| button::Style::default());
 
-    // Double-click via right-click open workaround (Iced doesn't have dblclick natively)
-    // Single click = select, Ctrl+O or Enter = open
     btn.into()
 }
 
@@ -422,11 +413,7 @@ fn file_row(file: &FileRecord, selected: bool) -> Element<Message> {
     button(row_content)
         .on_press(Message::FileSelected(file.id))
         .width(Length::Fill)
-        .style(|_t, _s| if selected {
-            button::Style::default()
-        } else {
-            button::Style::default()
-        })
+        .style(|_t, _s| button::Style::default())
         .into()
 }
 
