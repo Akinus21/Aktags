@@ -102,7 +102,7 @@ fn extract_xlsx(path: &Path, max_chars: usize) -> Result<String> {
         if let Ok(range) = workbook.worksheet_range(&sheet_name) {
             for row in range.rows() {
                 let line: Vec<String> = row.iter()
-                    .filter(|c| !matches!(c, calamine::DataType::Empty))
+                    .filter(|c| !matches!(c, calamine::Data::Empty))
                     .map(|c| c.to_string())
                     .collect();
                 if !line.is_empty() {
