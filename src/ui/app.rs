@@ -9,6 +9,7 @@ use crate::config::{self, Config};
 use crate::daemon::{Daemon, DaemonStats};
 use crate::db::{self, DbPool, FileRecord, SearchFilter};
 use crate::taxonomy;
+use crate::updater::UpdateStatus as UpdaterStatus;
 
 pub fn run(cfg: Config, pool: DbPool) -> iced::Result {
     let (app, cmd) = AkTags::new((cfg, pool));
@@ -100,6 +101,10 @@ pub enum Message {
     DaemonStatsRefreshed(DaemonStats),
     FileRecordLoaded(Option<FileRecord>),
     Tick,
+    CheckForUpdate,
+    UpdateCheckResult(crate::updater::UpdateStatus),
+    UpdateDownload,
+    UpdateInstall,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -137,6 +142,7 @@ pub struct AkTags {
     pub daemon_stats: DaemonStats,
     pub status_message: Option<String>,
     pub theme: crate::ui::theme::ThemeType,
+    pub update_status: UpdaterStatus,
 }
 
 impl AkTags {
@@ -183,6 +189,7 @@ impl AkTags {
             daemon_stats: DaemonStats::default(),
             status_message: None,
             theme: crate::ui::theme::ThemeType::Dark,
+            update_status: UpdaterStatus::UpToDate,
         };
 
         let cmd = if app.panel == Panel::Browser {
@@ -425,6 +432,22 @@ impl AkTags {
                 }
             }
 
+            Message::CheckForUpdate => {
+                return Task::perform(updater::check_for_update_async(), Message::UpdateCheckResult);
+            }
+
+            Message::UpdateCheckResult(status) => {
+                self.update_status = status;
+            }
+
+            Message::UpdateDownload => {
+                self.status_message = Some("Downloading update...".into());
+            }
+
+            Message::UpdateInstall => {
+                self.status_message = Some("Installing update and restarting...".into());
+            }
+
             Message::FirstRunOllamaUrlChanged(s) => { self.first_run_url = s; }
             Message::FirstRunModelChanged(s)     => { self.first_run_model = s; }
             Message::FirstRunWatchDirChanged(s)  => { self.first_run_watch = s; }
@@ -462,8 +485,12 @@ impl AkTags {
     }
 
     pub fn subscription(&self) -> Subscription<Message> {
-        time::every(std::time::Duration::from_secs(3))
-            .map(|_| Message::Tick)
+        Subscription::batch([
+            time::every(std::time::Duration::from_secs(3))
+                .map(|_| Message::Tick),
+            time::every(std::time::Duration::from_secs(3600))
+                .map(|_| Message::CheckForUpdate),
+        ])
     }
 
     // ── Helper commands ───────────────────────────────────────────────────────

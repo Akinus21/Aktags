@@ -182,6 +182,62 @@ pub fn view(app: &AkTags) -> Element<Message> {
 
         Space::with_height(24.0),
 
+        // ── Updates ────────────────────────────────────────────────────────────
+        section_header("Updates".to_string()),
+        row![
+            text(format!("Version {}", crate::updater::current_version())).size(12),
+            Space::with_width(Length::Fill),
+            match &app.update_status {
+                crate::updater::UpdateStatus::UpToDate => {
+                    Element::from(text("Up to date ✓").size(12).color(Palette::GREEN))
+                }
+                crate::updater::UpdateStatus::Available { version, .. } => {
+                    row![
+                        text(format!("Update available: v{}", version)).size(12)
+                            .color(Palette::ACCENT),
+                        Space::with_width(8.0),
+                        button(text("Download").size(11))
+                            .on_press(Message::UpdateDownload)
+                            .padding([4, 10]),
+                    ]
+                    .into()
+                }
+                crate::updater::UpdateStatus::Downloading { version, progress } => {
+                    row![
+                        text(format!("Downloading v{}... {:.0}%", version, progress)).size(12)
+                            .color(Palette::ACCENT2),
+                    ]
+                    .into()
+                }
+                crate::updater::UpdateStatus::Ready { version, .. } => {
+                    row![
+                        text(format!("v{} ready to install", version)).size(12)
+                            .color(Palette::GREEN),
+                        Space::with_width(8.0),
+                        button(text("Install & Restart").size(11))
+                            .on_press(Message::UpdateInstall)
+                            .padding([4, 10]),
+                    ]
+                    .into()
+                }
+                crate::updater::UpdateStatus::Error(e) => {
+                    Element::from(text(format!("Error: {}", e)).size(12).color(Palette::RED))
+                }
+            },
+        ],
+
+        Space::with_height(8.0),
+
+        if matches!(app.update_status, crate::updater::UpdateStatus::UpToDate) {
+            button(text("Check for Updates").size(12))
+                .on_press(Message::CheckForUpdate)
+                .padding([6, 14])
+        } else {
+            Element::from(Space::with_height(0.0))
+        },
+
+        Space::with_height(24.0),
+
         // ── Save / Actions ────────────────────────────────────────────────
         row![
             button(text("Save Settings").size(13))

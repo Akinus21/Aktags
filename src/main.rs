@@ -5,6 +5,7 @@ mod extractor;
 mod tagger;
 mod taxonomy;
 mod ui;
+mod updater;
 
 use anyhow::Result;
 use tracing::info;
