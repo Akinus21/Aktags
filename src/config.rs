@@ -34,11 +34,18 @@ pub struct UiConfig {
     pub theme: String,
 }
 
+fn home_dir() -> PathBuf {
+    std::env::var("HOME")
+        .ok()
+        .map(PathBuf::from)
+        .or_else(dirs::home_dir)
+        .unwrap_or_else(|| PathBuf::from("/tmp"))
+}
+
 impl Default for Config {
     fn default() -> Self {
-        let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("/tmp"));
         Self {
-            watch_dirs: vec![home.join("Documents")],
+            watch_dirs: vec![home_dir().join("Documents")],
             db_path: config_dir().join("aktags.db"),
             ollama_base_url: String::new(),
             ollama_model: String::new(),
@@ -111,8 +118,7 @@ impl SupportedExtensions {
 }
 
 pub fn config_dir() -> PathBuf {
-    let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("/tmp"));
-    home.join(".aktags")
+    home_dir().join(".aktags")
 }
 
 pub fn config_path() -> PathBuf {
