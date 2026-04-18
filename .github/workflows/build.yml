@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      attestations: write
+      id-token: write
 
     steps:
       - uses: actions/checkout@v4
@@ -37,7 +39,13 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      # Capture stdout+stderr to build.log while preserving the real exit code
+      - name: Extract version
+        id: version
+        run: |
+          VERSION=$(grep '^version = ' Cargo.toml | sed 's/.*"\(.*\)"/\1/')
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "TAG_NAME=v$VERSION" >> $GITHUB_OUTPUT
+
       - name: Build release
         id: build
         run: |
@@ -49,20 +57,21 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: aktags-linux-x86_64
+          name: aktags-${{ steps.version.outputs.VERSION }}-linux-x86_64
           path: target/release/aktags
           retention-days: 30
 
-      - name: Publish rolling release
+      - name: Publish release
         if: success() && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: latest
-          name: "Latest Build"
-          prerelease: true
+          tag_name: ${{ steps.version.outputs.TAG_NAME }}
+          name: AkTags ${{ steps.version.outputs.VERSION }}
+          prerelease: false
+          generate_release_notes: true
           files: target/release/aktags
-          body: |
-            Automated build from ${{ github.sha }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # On failure: POST build log to webhook so OpenCode can fix it
       - name: Notify webhook on failure
