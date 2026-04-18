@@ -44,7 +44,10 @@ jobs:
         run: |
           VERSION=$(grep '^version = ' Cargo.toml | sed 's/.*"\(.*\)"/\1/')
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-          echo "TAG_NAME=v$VERSION" >> $GITHUB_OUTPUT
+          # Use timestamp for rolling releases to ensure unique tag each time
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          COMMIT_SHA=${GITHUB_SHA:0:8}
+          echo "TAG_NAME=v${VERSION}-${TIMESTAMP}-${COMMIT_SHA}" >> $GITHUB_OUTPUT
 
       - name: Build release
         id: build
@@ -56,8 +59,12 @@ jobs:
       - name: Extract changelog for release
         id: changelog
         run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
           # Extract the first section between ### Added and the next ##
           CONTENT=$(sed -n '/## \['"$VERSION"'\]/,/## \[/p' CHANGELOG.md | sed '$d' | sed '1d')
+          # Add commit info
+          COMMIT_MSG=$(git log -1 --oneline --format='%s')
+          CONTENT="${CONTENT}<br><br>---<br>Build: ${COMMIT_MSG} (${{ github.sha }})<br>Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
           CONTENT="${CONTENT//$'\\n'/<br>}"
           echo "BODY=$CONTENT" >> $GITHUB_OUTPUT
 
@@ -74,10 +81,11 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.TAG_NAME }}
-          name: AkTags ${{ steps.version.outputs.VERSION }}
+          name: AkTags v${{ steps.version.outputs.VERSION }} (${{ github.sha }})
           prerelease: false
           body: ${{ steps.changelog.outputs.BODY }}
           files: target/release/aktags
+          draft: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
