@@ -1,4 +1,5 @@
 use iced::Color;
+use iced::Background;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ThemeType {
@@ -10,7 +11,6 @@ pub enum ThemeType {
 pub struct Palette;
 
 impl Palette {
-    // ── Dark Theme (default) ────────────────────────────────────────────────
     pub const BG:         Color = Color { r: 0.059, g: 0.067, b: 0.090, a: 1.0 };
     pub const SURFACE:    Color = Color { r: 0.102, g: 0.114, b: 0.153, a: 1.0 };
     pub const SURFACE2:   Color = Color { r: 0.133, g: 0.149, b: 0.227, a: 1.0 };
@@ -25,7 +25,6 @@ impl Palette {
     pub const ORANGE:     Color = Color { r: 0.984, g: 0.573, b: 0.137, a: 1.0 };
     pub const TAG_BG:     Color = Color { r: 0.165, g: 0.184, b: 0.290, a: 1.0 };
 
-    // ── Light Theme ─────────────────────────────────────────────────────────
     pub const LIGHT_BG:       Color = Color { r: 0.973, g: 0.973, b: 0.973, a: 1.0 };
     pub const LIGHT_SURFACE:   Color = Color { r: 0.949, g: 0.949, b: 0.949, a: 1.0 };
     pub const LIGHT_SURFACE2:  Color = Color { r: 0.902, g: 0.902, b: 0.910, a: 1.0 };
@@ -40,7 +39,6 @@ impl Palette {
     pub const LIGHT_ORANGE:   Color = Color { r: 0.839, g: 0.376, b: 0.059, a: 1.0 };
     pub const LIGHT_TAG_BG:   Color = Color { r: 0.867, g: 0.867, b: 0.878, a: 1.0 };
 
-    // ── Eldritch Theme ────────────────────────────────────────────────────────
     pub const ELDRITCH_BG:        Color = Color { r: 0.129, g: 0.137, b: 0.216, a: 1.0 };
     pub const ELDRITCH_SURFACE:   Color = Color { r: 0.196, g: 0.204, b: 0.286, a: 1.0 };
     pub const ELDRITCH_SURFACE2:  Color = Color { r: 0.196, g: 0.204, b: 0.286, a: 1.0 };
@@ -59,20 +57,17 @@ impl Palette {
 
 pub fn iced_theme(theme_type: ThemeType) -> iced::Theme {
     match theme_type {
-        ThemeType::Light => Theme::Light,
-        ThemeType::Dark => Theme::Dark,
-        ThemeType::Eldritch => Theme::Custom(
-            iced::theme::Custom::new(iced::theme::Palette {
-                background: iced::widget::container::Style {
-                    background: Some(iced::Background::Color(Palette::ELDRITCH_BG)),
-                    border_radius: 0.0.into(),
-                    ..Default::default()
-                },
-                text: iced::widget::text::Style {
-                    color: Some(Palette::ELDRITCH_TEXT),
-                },
-                ..Default::default()
-            })
+        ThemeType::Light => iced::Theme::Light,
+        ThemeType::Dark => iced::Theme::Dark,
+        ThemeType::Eldritch => iced::Theme::Custom(
+            "eldritch".into(),
+            iced::theme::Palette {
+                background: Background::from(Palette::ELDRITCH_BG),
+                text: Palette::ELDRITCH_TEXT,
+                primary: Palette::ELDRITCH_ACCENT,
+                success: Palette::ELDRITCH_GREEN,
+                danger: Palette::ELDRITCH_MAGENTA,
+            },
         ),
     }
 }
