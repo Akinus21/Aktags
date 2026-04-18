@@ -53,6 +53,14 @@ jobs:
           cargo build --release 2>&1 | tee build.log
         shell: bash
 
+      - name: Extract changelog for release
+        id: changelog
+        run: |
+          # Extract the first section between ### Added and the next ##
+          CONTENT=$(sed -n '/## \['"$VERSION"'\]/,/## \[/p' CHANGELOG.md | sed '$d' | sed '1d')
+          CONTENT="${CONTENT//$'\\n'/<br>}"
+          echo "BODY=$CONTENT" >> $GITHUB_OUTPUT
+
       - name: Upload artifact
         if: success()
         uses: actions/upload-artifact@v4
@@ -68,7 +76,7 @@ jobs:
           tag_name: ${{ steps.version.outputs.TAG_NAME }}
           name: AkTags ${{ steps.version.outputs.VERSION }}
           prerelease: false
-          generate_release_notes: true
+          body: ${{ steps.changelog.outputs.BODY }}
           files: target/release/aktags
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
