@@ -17,10 +17,14 @@ pub fn run(cfg: Config, pool: DbPool) -> iced::Result {
 
     iced::application("AkTags", app_update, app_view)
         .subscription(app_subscription)
-        .theme(|_| Theme::Dark)
+        .theme(app_theme)
         .run_with(move || {
             (Arc::clone(&app), cmd)
         })
+}
+
+fn app_theme(app: &Arc<AkTags>) -> Theme {
+    crate::ui::theme::iced_theme(app.theme)
 }
 
 fn app_update(app: &mut Arc<AkTags>, msg: Message) -> Task<Message> {
@@ -87,6 +91,7 @@ pub enum Message {
     WatchDirInputChanged(String),
     SaveSettings,
     RetagAll,
+    ThemeChanged(crate::ui::theme::ThemeType),
     FirstRunOllamaUrlChanged(String),
     FirstRunModelChanged(String),
     FirstRunWatchDirChanged(String),
@@ -130,6 +135,7 @@ pub struct AkTags {
     pub first_run_watch: String,
     pub daemon_stats: DaemonStats,
     pub status_message: Option<String>,
+    pub theme: crate::ui::theme::ThemeType,
 }
 
 impl AkTags {
@@ -176,6 +182,7 @@ impl AkTags {
             first_run_watch,
             daemon_stats: DaemonStats::default(),
             status_message: None,
+            theme: crate::ui::theme::ThemeType::Dark,
         };
 
         let cmd = if app.panel == Panel::Browser {
@@ -393,6 +400,10 @@ impl AkTags {
             Message::RetagAll => {
                 self.daemon.lock().unwrap().retag_all();
                 self.status_message = Some("Re-tag queued for all files".into());
+            }
+
+            Message::ThemeChanged(theme) => {
+                self.theme = theme;
             }
 
             Message::FirstRunOllamaUrlChanged(s) => { self.first_run_url = s; }

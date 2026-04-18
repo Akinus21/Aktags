@@ -170,6 +170,18 @@ pub fn view(app: &AkTags) -> Element<Message> {
 
         Space::with_height(24.0),
 
+        // ── Theme ────────────────────────────────────────────────────────────
+        section_header("Appearance".to_string()),
+        row![
+            theme_button("🌙 Dark", ThemeType::Dark, app.theme),
+            Space::with_width(8.0),
+            theme_button("☀️ Light", ThemeType::Light, app.theme),
+            Space::with_width(8.0),
+            theme_button("🌀 Eldritch", ThemeType::Eldritch, app.theme),
+        ],
+
+        Space::with_height(24.0),
+
         // ── Save / Actions ────────────────────────────────────────────────
         row![
             button(text("Save Settings").size(13))
@@ -220,6 +232,21 @@ fn section_header(title: String) -> Element<'static, Message> {
         text(title).size(13).color(Palette::ACCENT2),
         Space::with_height(8.0),
     ]
+    .into()
+}
+
+fn theme_button(label: &str, theme_type: ThemeType, current: ThemeType) -> Element<Message> {
+    let is_active = theme_type == current;
+    button(
+        text(label).size(13).color(if is_active {
+            Palette::ACCENT
+        } else {
+            Palette::TEXT_DIM
+        })
+    )
+    .on_press(Message::ThemeChanged(theme_type))
+    .padding([8, 16])
+    .style(|_t, _s| button::Style::default())
     .into()
 }
 
