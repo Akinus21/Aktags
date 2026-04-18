@@ -1,4 +1,5 @@
 use iced::Color;
+use std::sync::Arc;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ThemeType {
@@ -59,13 +60,16 @@ pub fn iced_theme(theme_type: ThemeType) -> iced::Theme {
         ThemeType::Light => iced::Theme::Light,
         ThemeType::Dark => iced::Theme::Dark,
         ThemeType::Eldritch => iced::Theme::Custom(
-            iced::theme::Custom::new(iced::theme::Palette {
-                background: Palette::ELDRITCH_BG,
-                text: Palette::ELDRITCH_TEXT,
-                primary: Palette::ELDRITCH_ACCENT,
-                success: Palette::ELDRITCH_GREEN,
-                danger: Palette::ELDRITCH_MAGENTA,
-            })
+            Arc::new(iced::theme::Custom::new(
+                "eldritch".to_string(),
+                iced::theme::Palette {
+                    background: Palette::ELDRITCH_BG,
+                    text: Palette::ELDRITCH_TEXT,
+                    primary: Palette::ELDRITCH_ACCENT,
+                    success: Palette::ELDRITCH_GREEN,
+                    danger: Palette::ELDRITCH_MAGENTA,
+                },
+            ))
         ),
     }
 }
