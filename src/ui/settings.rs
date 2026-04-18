@@ -65,7 +65,7 @@ pub fn view_first_run(app: &AkTags) -> Element<Message> {
                 Space::with_height(32.0),
 
                 button(
-                    text("Get Started →").size(15)
+                    text("Get Started").size(15)
                 )
                 .on_press(Message::FirstRunComplete)
                 .padding([12, 32])
@@ -95,7 +95,7 @@ pub fn view_first_run(app: &AkTags) -> Element<Message> {
 
 pub fn view(app: &AkTags) -> Element<Message> {
     let header = row![
-        text("⚙ Settings").size(20),
+        text("Settings").size(20),
         Space::with_width(Length::Fill),
         button(text("← Back").size(13))
             .on_press(Message::SwitchPanel(Panel::Browser))
@@ -173,11 +173,11 @@ pub fn view(app: &AkTags) -> Element<Message> {
         // ── Theme ────────────────────────────────────────────────────────────
         section_header("Appearance".to_string()),
         row![
-            theme_button("🌙 Dark", ThemeType::Dark, app.theme),
+            theme_button("Dark", ThemeType::Dark, app.theme),
             Space::with_width(8.0),
-            theme_button("☀️ Light", ThemeType::Light, app.theme),
+            theme_button("Light", ThemeType::Light, app.theme),
             Space::with_width(8.0),
-            theme_button("🌀 Eldritch", ThemeType::Eldritch, app.theme),
+            theme_button("Eldritch", ThemeType::Eldritch, app.theme),
         ],
 
         Space::with_height(24.0),
@@ -189,7 +189,7 @@ pub fn view(app: &AkTags) -> Element<Message> {
             Space::with_width(Length::Fill),
             match &app.update_status {
                 crate::updater::UpdateStatus::UpToDate => {
-                    Element::from(text("Up to date ✓").size(12).color(Palette::GREEN))
+                    Element::from(text("Up to date").size(12).color(Palette::GREEN))
                 }
                 crate::updater::UpdateStatus::Available { version, .. } => {
                     row![
@@ -248,7 +248,7 @@ pub fn view(app: &AkTags) -> Element<Message> {
                 .padding([8, 20])
                 .style(|_t, _s| button::Style::default()),
             Space::with_width(12.0),
-            button(text("↺ Re-tag All Files").size(13))
+            button(text("Re-tag All Files").size(13))
                 .on_press(Message::RetagAll)
                 .padding([8, 20]),
         ],

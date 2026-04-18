@@ -48,7 +48,7 @@ impl Palette {
     pub const ELDRITCH_ACCENT2:   Color = Color { r: 0.408, g: 0.612, b: 0.957, a: 1.0 };
     pub const ELDRITCH_TEXT:      Color = Color { r: 0.922, g: 0.980, b: 0.980, a: 1.0 };
     pub const ELDRITCH_TEXT_DIM:  Color = Color { r: 0.439, g: 0.506, b: 0.816, a: 1.0 };
-    pub const ELDRITCH_GREEN:     Color = Color { r: 0.216, g: 0.957, b: 0.600, a: 1.0 };
+    pub const ELDRITCH_GREEN:     Color = Color { r: 55.0/255.0, g: 244.0/255.0, b: 153.0/255.0, a: 1.0 };
     pub const ELDRITCH_YELLOW:    Color = Color { r: 0.914, g: 0.976, b: 0.255, a: 1.0 };
     pub const ELDRITCH_MAGENTA:   Color = Color { r: 0.949, g: 0.396, b: 0.710, a: 1.0 };
     pub const ELDRITCH_PURPLE:    Color = Color { r: 0.565, g: 0.443, b: 0.957, a: 1.0 };

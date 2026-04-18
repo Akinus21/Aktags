@@ -3,7 +3,7 @@ use iced::{
     Alignment, Element, Length,
 };
 
-use super::{app::{AkTags, Message}, theme::*};
+use super::{app::{AkTags, Message, Panel}, theme::*};
 
 const CATEGORIES: &[&str] = &["work", "education", "technical", "personal", "military", "misc"];
 
@@ -11,18 +11,22 @@ const CATEGORIES: &[&str] = &["work", "education", "technical", "personal", "mil
 
 pub fn view_pending(app: &AkTags) -> Element<Message> {
     let header = row![
+        button(text("← Back").size(13))
+            .on_press(Message::SwitchPanel(Panel::Browser))
+            .padding([6, 14]),
+        Space::with_width(16.0),
         column![
-            text("🔖 Pending Tag Approvals").size(16),
+            text("Pending Tag Approvals").size(16),
             text("Tags proposed by AI not yet in your library. Approve, reject, or merge.")
                 .size(12)
                 .color(Palette::TEXT_DIM),
         ],
         Space::with_width(Length::Fill),
-        button(text("✓ Approve All").size(13))
+        button(text("Approve All").size(13))
             .on_press(Message::ApproveAll)
             .padding([6, 14]),
         Space::with_width(8.0),
-        button(text("✗ Reject All").size(13))
+        button(text("Reject All").size(13))
             .on_press(Message::RejectAll)
             .padding([6, 14]),
     ]
@@ -33,7 +37,7 @@ pub fn view_pending(app: &AkTags) -> Element<Message> {
         vec![
             container(
                 column![
-                    text("✅").size(48),
+                    text("All clear").size(48),
                     Space::with_height(12.0),
                     text("No pending tags").size(16),
                     text("All AI-proposed tags have been reviewed.")
@@ -99,7 +103,7 @@ fn pending_card<'a>(
                 .size(12)
                 .color(Palette::TEXT_DIM),
             Space::with_width(Length::Fill),
-            button(text("✗ Reject").size(12))
+            button(text("Reject").size(12))
                 .on_press(Message::PendingReject(tag.to_string()))
                 .padding([4, 10]),
         ]
@@ -122,7 +126,7 @@ fn pending_card<'a>(
                 .padding([5, 10])
                 .width(220.0),
             Space::with_width(8.0),
-            button(text("⇢ Merge as Alias").size(12))
+            button(text("Merge as Alias").size(12))
                 .on_press(Message::PendingMerge(
                     tag.to_string(),
                     merge_input.to_string(),
@@ -141,9 +145,11 @@ fn pending_card<'a>(
 
 pub fn view_taxonomy(app: &AkTags) -> Element<Message> {
     let header = row![
-        column![
-            text("🗂 Approved Tag Library").size(16),
-        ],
+        button(text("← Back").size(13))
+            .on_press(Message::SwitchPanel(Panel::Browser))
+            .padding([6, 14]),
+        Space::with_width(16.0),
+        text("Approved Tag Library").size(16),
         Space::with_width(Length::Fill),
         text_input("tag name", &app.new_tag_name)
             .on_input(Message::NewTagNameChanged)
@@ -240,7 +246,7 @@ fn taxonomy_tag_chip(
             Element::from(Space::with_width(0.0))
         },
         Space::with_width(6.0),
-        button(text("×").size(12))
+        button(text("X").size(12))
             .on_press(Message::RemoveTaxonomyTag(name))
             .padding([2, 5])
             .style(|_t, _s| button::Style::default()),

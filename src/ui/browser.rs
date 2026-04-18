@@ -47,7 +47,7 @@ fn view_header(app: &AkTags) -> Element<Message> {
     };
 
     let queue_badge = if app.daemon_stats.queue_size > 0 {
-        format!("⏳ {} queued", app.daemon_stats.queue_size)
+        format!("{} queued", app.daemon_stats.queue_size)
     } else {
         String::new()
     };
@@ -58,17 +58,15 @@ fn view_header(app: &AkTags) -> Element<Message> {
     row![
         text("AkTags").size(20).color(Palette::ACCENT),
         Space::with_width(12.0),
-        text(if app.daemon_stats.running && !app.config.ollama_base_url.is_empty() { "●" } else { "●" })
-            .size(12)
-            .color(status_color),
+        text("[*]").size(12).color(status_color),
         Space::with_width(8.0),
         text(status_label_owned).size(12).color(Palette::TEXT_DIM),
         Space::with_width(8.0),
         text(queue_badge_owned).size(11).color(Palette::YELLOW),
         Space::with_width(Length::Fill),
-        nav_button("↺ Re-tag All", Message::RetagAll),
+        nav_button("Re-tag All", Message::RetagAll),
         Space::with_width(8.0),
-        nav_button("⚙ Settings", Message::SwitchPanel(Panel::Settings)),
+        nav_button("Settings", Message::SwitchPanel(Panel::Settings)),
     ]
     .padding([0, 20])
     .height(HEADER_H)
@@ -89,15 +87,15 @@ fn nav_button(label: &str, msg: Message) -> Element<Message> {
 fn view_nav(app: &AkTags) -> Element<Message> {
     let pending_count = crate::taxonomy::pending_count();
     let pending_label = if pending_count > 0 {
-        format!("🔖 Pending ({})", pending_count)
+        format!("Pending ({})", pending_count)
     } else {
-        String::from("🔖 Pending")
+        String::from("Pending")
     };
 
     row![
-        tab_button(String::from("📁 Files"),       Panel::Browser,  app),
+        tab_button(String::from("Files"),       Panel::Browser,  app),
         tab_button(pending_label.clone(), Panel::Pending,  app),
-        tab_button(String::from("🗂 Tag Library"),  Panel::Taxonomy, app),
+        tab_button(String::from("Tag Library"),  Panel::Taxonomy, app),
     ]
     .padding([0, 20])
     .height(42.0)
@@ -209,12 +207,12 @@ fn category_item(
 
 fn category_icon(cat: &str) -> &'static str {
     match cat {
-        "documents" => "📄",
-        "images"    => "🖼",
-        "code"      => "💻",
-        "audio"     => "🎵",
-        "video"     => "🎬",
-        _           => "📁",
+        "documents" => "[doc]",
+        "images"    => "[img]",
+        "code"      => "[code]",
+        "audio"     => "[audio]",
+        "video"     => "[video]",
+        _           => "[file]",
     }
 }
 
@@ -241,8 +239,8 @@ fn view_main(app: &AkTags) -> Element<Message> {
 fn view_toolbar(app: &AkTags) -> Element<Message> {
     let count_label = format!("{} files", app.files.len());
     let view_icon = match app.view_mode {
-        ViewMode::Grid => "☰",
-        ViewMode::List => "⊞",
+        ViewMode::Grid => "Grid",
+        ViewMode::List => "List",
     };
 
     let count_label_owned = count_label;
@@ -273,7 +271,7 @@ fn view_active_filters(app: &AkTags) -> Element<Message> {
     let mut chips: Vec<Element<Message>> = vec![];
 
     if let Some(cat) = &app.active_category {
-        chips.push(filter_chip(format!("📁 {cat}"), Message::CategorySelected(None)));
+        chips.push(filter_chip(format!("{cat}"), Message::CategorySelected(None)));
     }
     for tag in &app.active_tags {
         chips.push(filter_chip(tag.clone(), Message::TagToggled(tag.clone())));
@@ -448,7 +446,7 @@ fn view_detail(app: &AkTags) -> Element<Message> {
                 .on_press(Message::FileDeselected)
                 .style(|_t, _s| button::Style::default()),
             Space::with_width(Length::Fill),
-            button(text("Open →").size(13))
+            button(text("Open").size(13))
                 .on_press(Message::FileOpened(file.id))
                 .padding([6, 12]),
         ]
@@ -534,15 +532,15 @@ fn empty_state<'a>(title: &'a str, subtitle: &'a str) -> Element<'a, Message> {
 
 fn file_type_icon(ext: &str) -> &'static str {
     match ext {
-        ".pdf"  => "📕", ".doc" | ".docx" => "📘",
-        ".txt" | ".md" => "📝", ".xls" | ".xlsx" => "📊",
-        ".ppt" | ".pptx" => "📊", ".py" => "🐍",
-        ".js" | ".ts" => "📜", ".sh" | ".bash" => "⚙",
-        ".json" | ".yaml" | ".yml" => "📋",
-        ".jpg" | ".jpeg" | ".png" | ".gif" | ".webp" => "🖼",
-        ".mp3" | ".wav" | ".flac" => "🎵",
-        ".mp4" | ".mkv" | ".avi" => "🎬",
-        _ => "📄",
+        ".pdf"  => "[PDF]", ".doc" | ".docx" => "[DOC]",
+        ".txt" | ".md" => "[TXT]", ".xls" | ".xlsx" => "[XLS]",
+        ".ppt" | ".pptx" => "[PPT]", ".py" => "[PY]",
+        ".js" | ".ts" => "[JS]", ".sh" | ".bash" => "[SH]",
+        ".json" | ".yaml" | ".yml" => "[JSON]",
+        ".jpg" | ".jpeg" | ".png" | ".gif" | ".webp" => "[IMG]",
+        ".mp3" | ".wav" | ".flac" => "[AUDIO]",
+        ".mp4" | ".mkv" | ".avi" => "[VIDEO]",
+        _ => "[FILE]",
     }
 }
 
