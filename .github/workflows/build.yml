@@ -53,7 +53,7 @@ jobs:
         id: build
         run: |
           set -o pipefail
-          cargo build --release 2>&1 | tee build.log
+          RUSTFLAGS="-A dead_code" cargo build --release 2>&1 | tee build.log
         shell: bash
 
       - name: Extract changelog for release
