@@ -92,6 +92,7 @@ pub enum Message {
     SaveSettings,
     RetagAll,
     ThemeChanged(crate::ui::theme::ThemeType),
+    StartDaemon,
     FirstRunOllamaUrlChanged(String),
     FirstRunModelChanged(String),
     FirstRunWatchDirChanged(String),
@@ -149,15 +150,14 @@ impl AkTags {
         let settings_ollama_url = config.ollama_base_url.clone();
         let settings_ollama_model = config.ollama_model.clone();
 
-        let mut daemon = Daemon::new(config.clone(), pool.clone());
-        let shutdown_tx = if !is_first_run { daemon.start().ok() } else { None };
+        let daemon = Daemon::new(config.clone(), pool.clone());
         let initial_panel = if is_first_run { Panel::FirstRun } else { Panel::Browser };
 
         let app = Self {
             config,
             pool,
             daemon: Arc::new(Mutex::new(daemon)),
-            shutdown_tx,
+            shutdown_tx: None,
             panel: initial_panel,
             view_mode: ViewMode::Grid,
             files: vec![],
@@ -189,6 +189,15 @@ impl AkTags {
             app.refresh_all()
         } else {
             Task::none()
+        };
+
+        let cmd = if is_first_run {
+            cmd
+        } else {
+            Task::batch([
+                cmd,
+                Task::perform(async {}, |()| Message::StartDaemon),
+            ])
         };
 
         (app, cmd)
@@ -404,6 +413,16 @@ impl AkTags {
 
             Message::ThemeChanged(theme) => {
                 self.theme = theme;
+            }
+
+            Message::StartDaemon => {
+                let is_first_run = self.panel == Panel::FirstRun;
+                if !is_first_run {
+                    let mut daemon = self.daemon.lock().unwrap();
+                    if let Ok(tx) = daemon.start() {
+                        self.shutdown_tx = Some(tx);
+                    }
+                }
             }
 
             Message::FirstRunOllamaUrlChanged(s) => { self.first_run_url = s; }
