@@ -359,7 +359,7 @@ fn file_card(file: &FileRecord, _selected: bool) -> Element<Message> {
 
 // ── List view ─────────────────────────────────────────────────────────────────
 
-fn view_list(app: &AkTags) -> Element<Message> {
+fn view_list(app: &AkTags) -> Element<'_, Message> {
     if app.files.is_empty() {
         return empty_state("No files found", "Try adjusting your search or filters.");
     }
@@ -375,7 +375,7 @@ fn view_list(app: &AkTags) -> Element<Message> {
         .into()
 }
 
-fn file_row(file: &FileRecord, _selected: bool) -> Element<Message> {
+fn file_row(file: &FileRecord, _selected: bool) -> Element<'_, Message> {
     let icon = file_type_icon(&file.extension);
     let tags: Vec<Element<Message>> = file.tags.iter().take(4)
         .map(|t| {
@@ -417,7 +417,7 @@ fn file_row(file: &FileRecord, _selected: bool) -> Element<Message> {
 
 // ── Detail panel ──────────────────────────────────────────────────────────────
 
-fn view_detail(app: &AkTags) -> Element<Message> {
+fn view_detail(app: &AkTags) -> Element<'_, Message> {
     let Some(file) = &app.selected_file else {
         return Space::with_width(0.0).into();
     };

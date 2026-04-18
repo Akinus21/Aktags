@@ -8,7 +8,7 @@ use super::{app::{AkTags, Message, Panel}, theme::*};
 
 // ── First-run screen ──────────────────────────────────────────────────────────
 
-pub fn view_first_run(app: &AkTags) -> Element<Message> {
+pub fn view_first_run(app: &AkTags) -> Element<'_, Message> {
     let content = column![
         Space::with_height(Length::Fill),
 
@@ -93,7 +93,7 @@ pub fn view_first_run(app: &AkTags) -> Element<Message> {
 
 // ── Settings panel ────────────────────────────────────────────────────────────
 
-pub fn view(app: &AkTags) -> Element<Message> {
+pub fn view(app: &AkTags) -> Element<'_, Message> {
     let header = row![
         text("Settings").size(20),
         Space::with_width(Length::Fill),
@@ -271,7 +271,7 @@ pub fn view(app: &AkTags) -> Element<Message> {
     .into()
 }
 
-fn watch_dir_row(dir: &PathBuf) -> Element<Message> {
+fn watch_dir_row(dir: &PathBuf) -> Element<'_, Message> {
     let dir_str = dir.to_string_lossy().to_string();
     row![
         text(dir_str).size(13).width(Length::Fill),
@@ -294,7 +294,7 @@ fn section_header(title: String) -> Element<'static, Message> {
     .into()
 }
 
-fn theme_button(label: &str, theme_type: ThemeType, current: ThemeType) -> Element<Message> {
+fn theme_button(label: &str, theme_type: ThemeType, current: ThemeType) -> Element<'_, Message> {
     let is_active = theme_type == current;
     button(
         text(label).size(13).color(if is_active {
@@ -315,7 +315,7 @@ fn label(s: String) -> Element<'static, Message> {
         .into()
 }
 
-fn stat_row(label: &str, value: String) -> Element<Message> {
+fn stat_row(label: &str, value: String) -> Element<'_, Message> {
     row![
         text(label).size(12)
             .color(Palette::TEXT_DIM)

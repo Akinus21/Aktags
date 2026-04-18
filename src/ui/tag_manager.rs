@@ -9,7 +9,7 @@ const CATEGORIES: &[&str] = &["work", "education", "technical", "personal", "mil
 
 // ── Pending tags panel ────────────────────────────────────────────────────────
 
-pub fn view_pending(app: &AkTags) -> Element<Message> {
+pub fn view_pending(app: &AkTags) -> Element<'_, Message> {
     let header = row![
         button(text("← Back").size(13))
             .on_press(Message::SwitchPanel(Panel::Browser))
@@ -143,7 +143,7 @@ fn pending_card<'a>(
 
 // ── Taxonomy panel ────────────────────────────────────────────────────────────
 
-pub fn view_taxonomy(app: &AkTags) -> Element<Message> {
+pub fn view_taxonomy(app: &AkTags) -> Element<'_, Message> {
     let header = row![
         button(text("← Back").size(13))
             .on_press(Message::SwitchPanel(Panel::Browser))
@@ -228,7 +228,7 @@ pub fn view_taxonomy(app: &AkTags) -> Element<Message> {
 fn taxonomy_tag_chip(
     name: String,
     meta: &crate::taxonomy::TagMeta,
-) -> Element<Message> {
+) -> Element<'_, Message> {
     let aliases_text = if meta.aliases.is_empty() {
         String::new()
     } else {
