@@ -155,6 +155,7 @@ impl AkTags {
             .unwrap_or_else(|| "~/Documents".to_string());
         let settings_ollama_url = config.ollama_base_url.clone();
         let settings_ollama_model = config.ollama_model.clone();
+        let saved_theme = config.ui.theme.clone();
 
         let daemon = Daemon::new(config.clone(), pool.clone());
         let initial_panel = if is_first_run { Panel::FirstRun } else { Panel::Browser };
@@ -188,7 +189,7 @@ impl AkTags {
             first_run_watch,
             daemon_stats: DaemonStats::default(),
             status_message: None,
-            theme: match config.ui.theme.as_str() {
+            theme: match saved_theme.as_str() {
                 "Light" => crate::ui::theme::ThemeType::Light,
                 "Dark" => crate::ui::theme::ThemeType::Dark,
                 "Eldritch" => crate::ui::theme::ThemeType::Eldritch,
