@@ -188,7 +188,12 @@ impl AkTags {
             first_run_watch,
             daemon_stats: DaemonStats::default(),
             status_message: None,
-            theme: crate::ui::theme::ThemeType::Dark,
+            theme: match config.ui.theme.as_str() {
+                "Light" => crate::ui::theme::ThemeType::Light,
+                "Dark" => crate::ui::theme::ThemeType::Dark,
+                "Eldritch" => crate::ui::theme::ThemeType::Eldritch,
+                _ => crate::ui::theme::ThemeType::Dark,
+            },
             update_status: UpdaterStatus::UpToDate,
         };
 
@@ -420,6 +425,13 @@ impl AkTags {
 
             Message::ThemeChanged(theme) => {
                 self.theme = theme;
+                let theme_str = match theme {
+                    crate::ui::theme::ThemeType::Light => "Light",
+                    crate::ui::theme::ThemeType::Dark => "Dark",
+                    crate::ui::theme::ThemeType::Eldritch => "Eldritch",
+                };
+                self.config.ui.theme = theme_str.to_string();
+                let _ = config::save(&self.config);
             }
 
             Message::StartDaemon => {

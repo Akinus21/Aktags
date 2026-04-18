@@ -31,6 +31,7 @@ pub struct UiConfig {
     pub thumbnail_size: u32,
     pub sidebar_width: u32,
     pub detail_panel_width: u32,
+    pub theme: String,
 }
 
 impl Default for Config {
@@ -82,6 +83,7 @@ impl Default for UiConfig {
             thumbnail_size: 120,
             sidebar_width: 240,
             detail_panel_width: 300,
+            theme: "Dark".to_string(),
         }
     }
 }
