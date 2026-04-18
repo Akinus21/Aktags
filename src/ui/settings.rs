@@ -232,8 +232,9 @@ pub fn view(app: &AkTags) -> Element<Message> {
             button(text("Check for Updates").size(12))
                 .on_press(Message::CheckForUpdate)
                 .padding([6, 14])
+                .into()
         } else {
-            Element::from(Space::with_height(0.0))
+            Space::with_height(0.0).into()
         },
 
         Space::with_height(24.0),

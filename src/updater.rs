@@ -1,4 +1,3 @@
-use anyhow::Result;
 use serde::Deserialize;
 
 const AKTAGS_REPO: &str = "Akinus21/Aktags";
@@ -26,37 +25,6 @@ pub enum UpdateStatus {
 
 pub fn current_version() -> &'static str {
     CURRENT_VERSION
-}
-
-pub fn check_for_update() -> Result<UpdateStatus> {
-    let url = format!("https://api.github.com/repos/{}/releases/latest", AKTAGS_REPO);
-    let client = reqwest::blocking::Client::new();
-    let resp = client
-        .get(&url)
-        .header("Accept", "application/vnd.github.v3+json")
-        .header("User-Agent", "aktags")
-        .send()?;
-
-    if !resp.status().is_success() {
-        return Ok(UpdateStatus::Error(format!("HTTP {}", resp.status())));
-    }
-
-    let release: Release = resp.json()?;
-
-    if release.is_draft || release.is_prerelease {
-        return Ok(UpdateStatus::UpToDate);
-    }
-
-    let latest = release.tag_name.trim_start_matches('v');
-    if latest != CURRENT_VERSION {
-        Ok(UpdateStatus::Available {
-            version: latest.to_string(),
-            html_url: release.html_url,
-            body: release.body.unwrap_or_default(),
-        })
-    } else {
-        Ok(UpdateStatus::UpToDate)
-    }
 }
 
 pub async fn check_for_update_async() -> UpdateStatus {

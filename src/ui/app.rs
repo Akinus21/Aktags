@@ -9,7 +9,7 @@ use crate::config::{self, Config};
 use crate::daemon::{Daemon, DaemonStats};
 use crate::db::{self, DbPool, FileRecord, SearchFilter};
 use crate::taxonomy;
-use crate::updater::UpdateStatus as UpdaterStatus;
+use crate::updater::{UpdateStatus as UpdaterStatus, check_for_update_async};
 
 pub fn run(cfg: Config, pool: DbPool) -> iced::Result {
     let (app, cmd) = AkTags::new((cfg, pool));
