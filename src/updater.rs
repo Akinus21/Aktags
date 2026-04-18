@@ -42,6 +42,15 @@ pub async fn check_for_update_async() -> UpdateStatus {
         .await
     {
         Ok(resp) => {
+            if resp.status().as_u16() == 404 {
+                return UpdateStatus::UpToDate;
+            }
+            if !resp.status().is_success() {
+                return UpdateStatus::Error(format!("HTTP {}", resp.status()));
+            }
+            if resp.status().as_u16() == 404 {
+                return UpdateStatus::UpToDate;
+            }
             if !resp.status().is_success() {
                 return UpdateStatus::Error(format!("HTTP {}", resp.status()));
             }
@@ -60,12 +69,22 @@ pub async fn check_for_update_async() -> UpdateStatus {
                     }
                     UpdateStatus::UpToDate
                 }
-                Err(e) => UpdateStatus::Error(e.to_string()),
+                Err(e) => {
+                    if e.is_timeout() {
+                        UpdateStatus::Error("Request timed out".to_string())
+                    } else {
+                        UpdateStatus::Error(e.to_string())
+                    }
+                }
             }
         }
         Err(e) => {
             warn!("Update check failed: {}", e);
-            UpdateStatus::Error(e.to_string())
+            if e.is_timeout() {
+                UpdateStatus::Error("Request timed out".to_string())
+            } else {
+                UpdateStatus::Error(e.to_string())
+            }
         }
     }
 }
