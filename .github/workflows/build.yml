@@ -60,13 +60,20 @@ jobs:
         id: changelog
         run: |
           VERSION=${{ steps.version.outputs.VERSION }}
-          # Extract the first section between ### Added and the next ##
-          CONTENT=$(sed -n '/## \['"$VERSION"'\]/,/## \[/p' CHANGELOG.md | sed '$d' | sed '1d')
+          echo "Extracting changelog for version $VERSION"
+          # Find the section for this version
+          CONTENT=$(sed -n "/## \[${VERSION}\]/,/^## \[/p" CHANGELOG.md 2>/dev/null | grep -v "^## " | head -n -1)
+          if [ -z "$CONTENT" ] || [ "$CONTENT" = "$VERSION" ]; then
+            echo "WARNING: Could not find changelog section, using default message"
+            CONTENT="Build of AkTags v${VERSION}"
+          fi
           # Add commit info
           COMMIT_MSG=$(git log -1 --oneline --format='%s')
-          CONTENT="${CONTENT}<br><br>---<br>Build: ${COMMIT_MSG} (${{ github.sha }})<br>Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          CONTENT="${CONTENT}<br><br>---<br>Commit: ${COMMIT_MSG}<br>SHA: ${{ github.sha }}<br>Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          # Convert newlines to <br>
           CONTENT="${CONTENT//$'\\n'/<br>}"
           echo "BODY=$CONTENT" >> $GITHUB_OUTPUT
+          echo "BODY length: ${#CONTENT}"
 
       - name: Upload artifact
         if: success()
