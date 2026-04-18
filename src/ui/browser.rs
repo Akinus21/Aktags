@@ -9,7 +9,7 @@ use iced::{
 use super::{app::{AkTags, Message, Panel, ViewMode}, theme::*};
 use crate::db::FileRecord;
 
-pub fn view(app: &AkTags) -> Element<Message> {
+pub fn view(app: &AkTags) -> Element<'_, Message> {
     let header = view_header(app);
     let nav    = view_nav(app);
     let body   = row![
@@ -27,7 +27,7 @@ pub fn view(app: &AkTags) -> Element<Message> {
 
 // ── Header ────────────────────────────────────────────────────────────────────
 
-fn view_header(app: &AkTags) -> Element<Message> {
+fn view_header(app: &AkTags) -> Element<'_, Message> {
     let ollama_ok = !app.config.ollama_base_url.is_empty();
     let status_color = if app.daemon_stats.running && ollama_ok {
         Palette::GREEN
@@ -75,7 +75,7 @@ fn view_header(app: &AkTags) -> Element<Message> {
     .into()
 }
 
-fn nav_button(label: &str, msg: Message) -> Element<Message> {
+fn nav_button(label: &str, msg: Message) -> Element<'_, Message> {
     button(text(label).size(13))
         .on_press(msg)
         .padding([6, 14])
@@ -84,7 +84,7 @@ fn nav_button(label: &str, msg: Message) -> Element<Message> {
 
 // ── Nav tabs ──────────────────────────────────────────────────────────────────
 
-fn view_nav(app: &AkTags) -> Element<Message> {
+fn view_nav(app: &AkTags) -> Element<'_, Message> {
     let pending_count = crate::taxonomy::pending_count();
     let pending_label = if pending_count > 0 {
         format!("Pending ({})", pending_count)
@@ -104,7 +104,7 @@ fn view_nav(app: &AkTags) -> Element<Message> {
     .into()
 }
 
-fn tab_button(label: String, panel: Panel, app: &AkTags) -> Element<Message> {
+fn tab_button(label: String, panel: Panel, app: &AkTags) -> Element<'_, Message> {
     let active = app.panel == panel;
     button(
         text(label).size(13).color(if active {
@@ -121,12 +121,12 @@ fn tab_button(label: String, panel: Panel, app: &AkTags) -> Element<Message> {
 
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 
-fn view_sidebar(app: &AkTags) -> Element<Message> {
+fn view_sidebar(app: &AkTags) -> Element<'_, Message> {
     let stats = app.stats.as_ref();
     let total = stats.map(|s| s.total).unwrap_or(0);
 
     // Categories
-    let mut cat_items: Vec<Element<Message>> = vec![
+    let mut cat_items: Vec<Element<'_, Message>> = vec![
         category_item(String::from("All Files"), total, None, app.active_category.clone()),
     ];
     if let Some(s) = stats {
@@ -141,7 +141,7 @@ fn view_sidebar(app: &AkTags) -> Element<Message> {
     }
 
     // Tag cloud
-    let tag_items: Vec<Element<Message>> = app.all_tags.iter()
+    let tag_items: Vec<Element<'_, Message>> = app.all_tags.iter()
         .take(100)
         .map(|(tag, count)| {
             let label = format!("{tag} {count}");
@@ -218,7 +218,7 @@ fn category_icon(cat: &str) -> &'static str {
 
 // ── Main area ─────────────────────────────────────────────────────────────────
 
-fn view_main(app: &AkTags) -> Element<Message> {
+fn view_main(app: &AkTags) -> Element<'_, Message> {
     let toolbar = view_toolbar(app);
     let active_filters = view_active_filters(app);
     let file_area = match app.view_mode {
@@ -236,7 +236,7 @@ fn view_main(app: &AkTags) -> Element<Message> {
     .into()
 }
 
-fn view_toolbar(app: &AkTags) -> Element<Message> {
+fn view_toolbar(app: &AkTags) -> Element<'_, Message> {
     let count_label = format!("{} files", app.files.len());
     let view_icon = match app.view_mode {
         ViewMode::Grid => "Grid",
@@ -263,12 +263,12 @@ fn view_toolbar(app: &AkTags) -> Element<Message> {
     .into()
 }
 
-fn view_active_filters(app: &AkTags) -> Element<Message> {
+fn view_active_filters(app: &AkTags) -> Element<'_, Message> {
     if app.active_tags.is_empty() && app.active_category.is_none() {
         return Space::with_height(0.0).into();
     }
 
-    let mut chips: Vec<Element<Message>> = vec![];
+    let mut chips: Vec<Element<'_, Message>> = vec![];
 
     if let Some(cat) = &app.active_category {
         chips.push(filter_chip(format!("{cat}"), Message::CategorySelected(None)));
@@ -303,12 +303,12 @@ fn filter_chip(label: String, on_remove: Message) -> Element<'static, Message> {
 
 // ── Grid view ─────────────────────────────────────────────────────────────────
 
-fn view_grid(app: &AkTags) -> Element<Message> {
+fn view_grid(app: &AkTags) -> Element<'_, Message> {
     if app.files.is_empty() {
         return empty_state("No files found", "Try adjusting your search or filters.");
     }
 
-    let cards: Vec<Element<Message>> = app.files.iter()
+    let cards: Vec<Element<'_, Message>> = app.files.iter()
         .map(|f| file_card(f, app.selected_file.as_ref().map(|s| s.id) == Some(f.id)))
         .collect();
 
@@ -321,13 +321,13 @@ fn view_grid(app: &AkTags) -> Element<Message> {
     .into()
 }
 
-fn file_card(file: &FileRecord, _selected: bool) -> Element<Message> {
+fn file_card(file: &FileRecord, _selected: bool) -> Element<'_, Message> {
     let icon = file_type_icon(&file.extension);
     let name = truncate(&file.filename, 22);
     let summary = file.summary.as_deref().unwrap_or("").to_string();
     let summary_short = truncate(&summary, 50);
 
-    let tags: Vec<Element<Message>> = file.tags.iter().take(3)
+    let tags: Vec<Element<'_, Message>> = file.tags.iter().take(3)
         .map(|t| {
             button(text(t).size(10))
                 .on_press(Message::TagToggled(t.clone()))
@@ -364,7 +364,7 @@ fn view_list(app: &AkTags) -> Element<'_, Message> {
         return empty_state("No files found", "Try adjusting your search or filters.");
     }
 
-    let rows: Vec<Element<Message>> = app.files.iter()
+    let rows: Vec<Element<'_, Message>> = app.files.iter()
         .map(|f| file_row(f, app.selected_file.as_ref().map(|s| s.id) == Some(f.id)))
         .collect();
 
@@ -377,7 +377,7 @@ fn view_list(app: &AkTags) -> Element<'_, Message> {
 
 fn file_row(file: &FileRecord, _selected: bool) -> Element<'_, Message> {
     let icon = file_type_icon(&file.extension);
-    let tags: Vec<Element<Message>> = file.tags.iter().take(4)
+    let tags: Vec<Element<'_, Message>> = file.tags.iter().take(4)
         .map(|t| {
             button(text(t).size(11))
                 .on_press(Message::TagToggled(t.clone()))
@@ -422,7 +422,7 @@ fn view_detail(app: &AkTags) -> Element<'_, Message> {
         return Space::with_width(0.0).into();
     };
 
-    let tags: Vec<Element<Message>> = file.tags.iter()
+    let tags: Vec<Element<'_, Message>> = file.tags.iter()
         .map(|t| {
             row![
                 button(text(t).size(12))

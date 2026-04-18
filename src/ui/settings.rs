@@ -127,7 +127,7 @@ pub fn view(app: &AkTags) -> Element<'_, Message> {
         section_header("Watch Directories".to_string()),
 
         {
-            let dir_rows: Vec<Element<Message>> = app.config.watch_dirs.iter()
+            let dir_rows: Vec<Element<'_, Message>> = app.config.watch_dirs.iter()
                 .map(|dir| watch_dir_row(dir))
                 .collect();
             Element::from(Column::with_children(dir_rows).spacing(6))

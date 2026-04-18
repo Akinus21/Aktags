@@ -33,7 +33,7 @@ pub fn view_pending(app: &AkTags) -> Element<'_, Message> {
     .align_y(Alignment::Center)
     .padding([16, 20]);
 
-    let items: Vec<Element<Message>> = if app.pending.is_empty() {
+    let items: Vec<Element<'_, Message>> = if app.pending.is_empty() {
         vec![
             container(
                 column![
@@ -86,7 +86,7 @@ fn pending_card<'a>(
         .collect::<Vec<_>>()
         .join(", ");
 
-    let cat_buttons: Vec<Element<Message>> = CATEGORIES.iter()
+    let cat_buttons: Vec<Element<'_, Message>> = CATEGORIES.iter()
         .map(|&cat| {
             button(text(cat).size(11))
                 .on_press(Message::PendingApprove(tag.to_string(), cat.to_string()))
@@ -157,7 +157,7 @@ pub fn view_taxonomy(app: &AkTags) -> Element<'_, Message> {
             .width(130.0),
         Space::with_width(8.0),
         {
-            let cat_buttons: Vec<Element<Message>> = CATEGORIES.iter()
+            let cat_buttons: Vec<Element<'_, Message>> = CATEGORIES.iter()
                 .map(|&cat| {
                     button(text(cat).size(11))
                         .on_press(Message::NewTagCategoryChanged(cat.to_string()))
@@ -187,13 +187,13 @@ pub fn view_taxonomy(app: &AkTags) -> Element<'_, Message> {
         by_category.entry(item.1.category.clone()).or_default().push(item);
     }
 
-    let mut sections: Vec<Element<Message>> = vec![];
+    let mut sections: Vec<Element<'_, Message>> = vec![];
     let mut cats: Vec<&String> = by_category.keys().collect();
     cats.sort();
 
     for cat in cats {
         let tags = &by_category[cat];
-        let tag_chips: Vec<Element<Message>> = tags.iter()
+        let tag_chips: Vec<Element<'_, Message>> = tags.iter()
             .map(|(name, meta)| taxonomy_tag_chip(name.clone(), meta))
             .collect();
 

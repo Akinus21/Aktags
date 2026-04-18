@@ -32,7 +32,7 @@ fn app_update(app: &mut Arc<AkTags>, msg: Message) -> Task<Message> {
     Arc::get_mut(app).unwrap().update(msg)
 }
 
-fn app_view(app: &Arc<AkTags>) -> Element<Message> {
+fn app_view(app: &Arc<AkTags>) -> Element<'_, Message> {
     (*app).view()
 }
 
@@ -487,7 +487,7 @@ impl AkTags {
         Task::none()
     }
 
-    pub fn view(&self) -> Element<Message> {
+    pub fn view(&self) -> Element<'_, Message> {
         match &self.panel {
             Panel::FirstRun  => super::settings::view_first_run(self),
             Panel::Browser   => super::browser::view(self),
