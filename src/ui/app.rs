@@ -433,7 +433,7 @@ impl AkTags {
             }
 
             Message::CheckForUpdate => {
-                return Task::perform(updater::check_for_update_async(), Message::UpdateCheckResult);
+                return Task::perform(check_for_update_async(), Message::UpdateCheckResult);
             }
 
             Message::UpdateCheckResult(status) => {

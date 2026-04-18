@@ -228,13 +228,15 @@ pub fn view(app: &AkTags) -> Element<Message> {
 
         Space::with_height(8.0),
 
-        if matches!(app.update_status, crate::updater::UpdateStatus::UpToDate) {
-            button(text("Check for Updates").size(12))
+        {
+            let check_btn = button(text("Check for Updates").size(12))
                 .on_press(Message::CheckForUpdate)
-                .padding([6, 14])
-                .into()
-        } else {
-            Space::with_height(0.0).into()
+                .padding([6, 14]);
+            if matches!(app.update_status, crate::updater::UpdateStatus::UpToDate) {
+                Element::from(check_btn)
+            } else {
+                Element::from(Space::with_height(0.0))
+            }
         },
 
         Space::with_height(24.0),
