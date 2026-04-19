@@ -7,10 +7,10 @@ mod taxonomy;
 mod ui;
 mod updater;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use std::env;
 use std::path::PathBuf;
-use tracing::info;
+use tracing::{error, info};
 use tracing_subscriber::EnvFilter;
 
 const DAEMON_LOCKFILE: &str = "aktags-daemon.pid";
@@ -106,8 +106,6 @@ fn main() -> Result<()> {
 }
 
 fn run_daemon() -> Result<()> {
-    use anyhow::Context;
-
     // Check for existing daemon
     if let Some(pid) = check_lockfile()? {
         anyhow::bail!("Daemon already running (PID {}). Exiting.", pid);
@@ -138,13 +136,15 @@ fn run_daemon() -> Result<()> {
     let rt = tokio::runtime::Runtime::new()?;
     rt.block_on(async {
         let mut daemon = daemon::Daemon::new(cfg, pool);
-        let shutdown_tx = daemon.start()?;
+        if let Err(e) = daemon.start() {
+            error!("Failed to start daemon: {}", e);
+            return;
+        }
         info!("Daemon running. Press Ctrl+C to stop.");
 
         // Wait for SIGINT/SIGTERM
         tokio::signal::ctrl_c().await.expect("Failed to listen for Ctrl+C");
         info!("Shutdown signal received");
-        let _ = shutdown_tx.send(()).await;
     });
 
     info!("Daemon stopped");
