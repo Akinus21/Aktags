@@ -1,0 +1,13 @@
+[Unit]
+Description=AkTags AI File Tagger Daemon
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/aktags --daemon
+Restart=on-failure
+RestartSec=5
+Environment=RUST_LOG=aktags=info,warn
+
+[Install]
+WantedBy=default.target

@@ -52,6 +52,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 crossbeam-channel = "0.5"
 open = "5"
 shellexpand = "3"
+libc = "0.2"
 
 [profile.release]
 opt-level = 3

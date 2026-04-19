@@ -1,13 +1,10 @@
 [Desktop Entry]
 Name=AkTags
-GenericName=File Manager
 Comment=AI-powered tag-based file browser
-Exec=aktags %F
-Icon=aktags
+Exec=/usr/local/bin/aktags
+Icon=folder
 Terminal=false
 Type=Application
-Categories=Utility;FileManager;
-MimeType=inode/directory;
-StartupWMClass=aktags
+Categories=Utility;FileTools;
 StartupNotify=true
-Keywords=files;tags;ai;organize;
+X-GNOME-Autostart-enabled=true

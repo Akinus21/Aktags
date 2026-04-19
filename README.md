@@ -1,4 +1,4 @@
-# Aktags
+# AkTags
 
 AI-powered tag-based file browser with a native GUI, built in Rust.
 
@@ -31,6 +31,14 @@ cargo build --release
 ./target/release/aktags
 ```
 
+## Command Line Options
+
+```bash
+aktags           Start GUI with embedded daemon (default)
+aktags --daemon Start daemon-only mode (no GUI)
+aktags --help   Show help
+```
+
 ## Configuration
 
 On first launch, you'll configure:
@@ -38,6 +46,52 @@ On first launch, you'll configure:
 1. **Ollama Base URL** - Your Ollama server endpoint
 2. **Model** - The LLM model to use for tagging
 3. **Watch Directory** - Directory to monitor for file changes
+
+## Autostart
+
+### Daemon Only (systemd user service)
+
+Run the background daemon on login without the GUI:
+
+```bash
+# Install the systemd user service
+mkdir -p ~/.config/systemd/user
+cp aktags-daemon.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable aktags-daemon
+systemctl --user start aktags-daemon
+
+# Check status
+systemctl --user status aktags-daemon
+
+# View logs
+journalctl --user -u aktags-daemon
+```
+
+### GUI on Login (desktop autostart)
+
+Launch the full GUI application on login:
+
+```bash
+# Install desktop autostart
+mkdir -p ~/.config/autostart
+cp aktags.desktop ~/.config/autostart/
+```
+
+Note: The desktop autostart launches the full GUI application. If you only want the daemon running, use the systemd service above instead.
+
+### Install Binary System-wide
+
+To install the binary for all users:
+
+```bash
+sudo cp aktags /usr/local/bin/
+sudo chmod +x /usr/local/bin/aktags
+
+# Then for autostart:
+cp aktags-daemon.service ~/.config/systemd/user/
+cp aktags.desktop ~/.config/autostart/
+```
 
 ## Architecture
 
