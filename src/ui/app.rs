@@ -9,6 +9,7 @@ use crate::config::{self, Config};
 use crate::daemon::{Daemon, DaemonStats};
 use crate::db::{self, DbPool, FileRecord, SearchFilter};
 use crate::taxonomy;
+use crate::ui::theme;
 use crate::updater::{UpdateStatus as UpdaterStatus, check_for_update_async};
 
 pub fn run(cfg: Config, pool: DbPool) -> iced::Result {
@@ -25,7 +26,7 @@ pub fn run(cfg: Config, pool: DbPool) -> iced::Result {
 }
 
 fn app_theme(app: &Arc<AkTags>) -> Theme {
-    crate::ui::theme::iced_theme(app.theme)
+    theme::iced_theme(app.theme_type)
 }
 
 fn app_update(app: &mut Arc<AkTags>, msg: Message) -> Task<Message> {
@@ -92,7 +93,7 @@ pub enum Message {
     WatchDirInputChanged(String),
     SaveSettings,
     RetagAll,
-    ThemeChanged(crate::ui::theme::ThemeType),
+    ThemeChanged(String),
     StartDaemon,
     FirstRunOllamaUrlChanged(String),
     FirstRunModelChanged(String),
@@ -141,7 +142,7 @@ pub struct AkTags {
     pub first_run_watch: String,
     pub daemon_stats: DaemonStats,
     pub status_message: Option<String>,
-    pub theme: crate::ui::theme::ThemeType,
+    pub theme_type: theme::ThemeType,
     pub update_status: UpdaterStatus,
 }
 
@@ -156,6 +157,8 @@ impl AkTags {
         let settings_ollama_url = config.ollama_base_url.clone();
         let settings_ollama_model = config.ollama_model.clone();
         let saved_theme = config.ui.theme.clone();
+        theme::ensure_default_themes();
+        let theme_type = theme::ThemeType::from_string(&saved_theme);
 
         let daemon = Daemon::new(config.clone(), pool.clone());
         let initial_panel = if is_first_run { Panel::FirstRun } else { Panel::Browser };
@@ -189,12 +192,7 @@ impl AkTags {
             first_run_watch,
             daemon_stats: DaemonStats::default(),
             status_message: None,
-            theme: match saved_theme.as_str() {
-                "Light" => crate::ui::theme::ThemeType::Light,
-                "Dark" => crate::ui::theme::ThemeType::Dark,
-                "Eldritch" => crate::ui::theme::ThemeType::Eldritch,
-                _ => crate::ui::theme::ThemeType::Dark,
-            },
+            theme_type,
             update_status: UpdaterStatus::UpToDate,
         };
 
@@ -424,14 +422,10 @@ impl AkTags {
                 self.status_message = Some("Re-tag queued for all files".into());
             }
 
-            Message::ThemeChanged(theme) => {
-                self.theme = theme;
-                let theme_str = match theme {
-                    crate::ui::theme::ThemeType::Light => "Light",
-                    crate::ui::theme::ThemeType::Dark => "Dark",
-                    crate::ui::theme::ThemeType::Eldritch => "Eldritch",
-                };
-                self.config.ui.theme = theme_str.to_string();
+            Message::ThemeChanged(theme_name) => {
+                let new_theme_type = theme::ThemeType::from_string(&theme_name);
+                self.theme_type = new_theme_type;
+                self.config.ui.theme = theme_name;
                 let _ = config::save(&self.config);
             }
 

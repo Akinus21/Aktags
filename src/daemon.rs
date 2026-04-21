@@ -187,7 +187,7 @@ impl Daemon {
                         let cfg = config.lock().unwrap().clone();
                         match event {
                             FileEvent::Process(path) => {
-                                process_file(&path, &cfg, &pool, &client, &stats).await;
+                                let _ = tokio::spawn(process_file(&path, &cfg, &pool, &client, stats));
                             }
                             FileEvent::Delete(path) => {
                                 let _ = db::remove_file(&pool, path.to_str().unwrap_or(""));
@@ -215,10 +215,9 @@ impl Daemon {
                         }
                     }
                     Err(crossbeam_channel::RecvTimeoutError::Timeout) => {
-                        // yield back to tokio runtime briefly
                         tokio::task::yield_now().await;
                     }
-                    Err(_) => break, // channel disconnected
+                    Err(_) => break,
                 }
             }
 

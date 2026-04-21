@@ -3,15 +3,18 @@ use iced::{
     Alignment, Element, Length,
 };
 
-use super::{app::{AkTags, Message, Panel}, theme::*};
+use super::app::{AkTags, Message, Panel};
+use super::theme;
 
 const CATEGORIES: &[&str] = &["work", "education", "technical", "personal", "military", "misc"];
 
 // ── Pending tags panel ────────────────────────────────────────────────────────
 
 pub fn view_pending(app: &AkTags) -> Element<'_, Message> {
+    let colors = theme::default_colors(app.theme_type);
+
     let header = row![
-        button(text("← Back").size(13))
+        button(text("<- Back").size(13))
             .on_press(Message::SwitchPanel(Panel::Browser))
             .padding([6, 14]),
         Space::with_width(16.0),
@@ -19,7 +22,7 @@ pub fn view_pending(app: &AkTags) -> Element<'_, Message> {
             text("Pending Tag Approvals").size(16),
             text("Tags proposed by AI not yet in your library. Approve, reject, or merge.")
                 .size(12)
-                .color(Palette::TEXT_DIM),
+                .color(colors.text_dim()),
         ],
         Space::with_width(Length::Fill),
         button(text("Approve All").size(13))
@@ -42,7 +45,7 @@ pub fn view_pending(app: &AkTags) -> Element<'_, Message> {
                     text("No pending tags").size(16),
                     text("All AI-proposed tags have been reviewed.")
                         .size(13)
-                        .color(Palette::TEXT_DIM),
+                        .color(colors.text_dim()),
                 ]
                 .spacing(8)
                 .align_x(Alignment::Center)
@@ -76,6 +79,7 @@ fn pending_card<'a>(
     tag: &'a str,
     meta: &'a crate::taxonomy::PendingTag,
 ) -> Element<'a, Message> {
+    let colors = theme::default_colors(app.theme_type);
     let merge_input = app.pending_merge_inputs
         .get(tag)
         .map(|s| s.as_str())
@@ -97,11 +101,11 @@ fn pending_card<'a>(
 
     column![
         row![
-            text(tag).size(16).color(Palette::ORANGE),
+            text(tag).size(16).color(colors.orange()),
             Space::with_width(12.0),
             text(format!("{} file{}", meta.file_count, if meta.file_count != 1 { "s" } else { "" }))
                 .size(12)
-                .color(Palette::TEXT_DIM),
+                .color(colors.text_dim()),
             Space::with_width(Length::Fill),
             button(text("Reject").size(12))
                 .on_press(Message::PendingReject(tag.to_string()))
@@ -110,12 +114,12 @@ fn pending_card<'a>(
         .align_y(Alignment::Center),
 
         text(files_preview).size(11)
-            .color(Palette::TEXT_DIM),
+            .color(colors.text_dim()),
 
         Space::with_height(8.0),
 
         text("Approve as:").size(11)
-            .color(Palette::TEXT_DIM),
+            .color(colors.text_dim()),
         Row::with_children(cat_buttons).spacing(6.0),
 
         Space::with_height(8.0),
@@ -144,8 +148,10 @@ fn pending_card<'a>(
 // ── Taxonomy panel ────────────────────────────────────────────────────────────
 
 pub fn view_taxonomy(app: &AkTags) -> Element<'_, Message> {
+    let colors = theme::default_colors(app.theme_type);
+
     let header = row![
-        button(text("← Back").size(13))
+        button(text("<- Back").size(13))
             .on_press(Message::SwitchPanel(Panel::Browser))
             .padding([6, 14]),
         Space::with_width(16.0),
@@ -194,14 +200,14 @@ pub fn view_taxonomy(app: &AkTags) -> Element<'_, Message> {
     for cat in cats {
         let tags = &by_category[cat];
         let tag_chips: Vec<Element<'_, Message>> = tags.iter()
-            .map(|(name, meta)| taxonomy_tag_chip(name.clone(), meta))
+            .map(|(name, meta)| taxonomy_tag_chip(name.clone(), meta, &colors))
             .collect();
 
         sections.push(
             column![
                 text(format!("{cat} ({})", tags.len()))
                     .size(11)
-                    .color(Palette::TEXT_DIM),
+                    .color(colors.text_dim()),
                 Space::with_height(8.0),
                 Row::with_children(tag_chips).spacing(8.0),
                 Space::with_height(16.0),
@@ -228,11 +234,12 @@ pub fn view_taxonomy(app: &AkTags) -> Element<'_, Message> {
 fn taxonomy_tag_chip(
     name: String,
     meta: &crate::taxonomy::TagMeta,
+    colors: &theme::ThemeColors,
 ) -> Element<'_, Message> {
     let aliases_text = if meta.aliases.is_empty() {
         String::new()
     } else {
-        format!(" → {}", meta.aliases.join(", "))
+        format!(" -> {}", meta.aliases.join(", "))
     };
     let name_for_text = name.clone();
     let aliases_for_text = aliases_text.clone();
@@ -241,7 +248,7 @@ fn taxonomy_tag_chip(
     row![
         text(name_for_text).size(13),
         if has_aliases {
-            Element::from(text(aliases_for_text).size(11).color(Palette::TEXT_DIM))
+            Element::from(text(aliases_for_text).size(11).color(colors.text_dim()))
         } else {
             Element::from(Space::with_width(0.0))
         },

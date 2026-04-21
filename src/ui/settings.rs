@@ -4,28 +4,32 @@ use iced::{
 };
 use std::path::PathBuf;
 
-use super::{app::{AkTags, Message, Panel}, theme::*};
+use super::app::{AkTags, Message, Panel};
+use super::theme::{self, ThemeType};
 
 // ── First-run screen ──────────────────────────────────────────────────────────
 
 pub fn view_first_run(app: &AkTags) -> Element<'_, Message> {
+    let t = &app.theme_type;
+    let colors = theme::default_colors(*t);
+
     let content = column![
         Space::with_height(Length::Fill),
 
         container(
             column![
                 text("Welcome to AkTags").size(28)
-                    .color(Palette::ACCENT),
+                    .color(colors.accent()),
                 Space::with_height(8.0),
                 text("AI-powered tag-based file browser")
                     .size(14)
-                    .color(Palette::TEXT_DIM),
+                    .color(colors.text_dim()),
 
                 Space::with_height(32.0),
 
                 // Ollama URL
                 text("Ollama Base URL").size(12)
-                    .color(Palette::TEXT_DIM),
+                    .color(colors.text_dim()),
                 Space::with_height(6.0),
                 text_input("https://ollama.akinus21.com", &app.first_run_url)
                     .on_input(Message::FirstRunOllamaUrlChanged)
@@ -36,11 +40,11 @@ pub fn view_first_run(app: &AkTags) -> Element<'_, Message> {
 
                 // Model
                 text("Ollama Model").size(12)
-                    .color(Palette::TEXT_DIM),
+                    .color(colors.text_dim()),
                 Space::with_height(4.0),
                 text("Run 'ollama list' on your server to see available models.")
                     .size(11)
-                    .color(Palette::TEXT_DIM),
+                    .color(colors.text_dim()),
                 Space::with_height(6.0),
                 text_input("gpt-oss:20b-cloud", &app.first_run_model)
                     .on_input(Message::FirstRunModelChanged)
@@ -51,11 +55,11 @@ pub fn view_first_run(app: &AkTags) -> Element<'_, Message> {
 
                 // Watch directory
                 text("Watch Directory").size(12)
-                    .color(Palette::TEXT_DIM),
+                    .color(colors.text_dim()),
                 Space::with_height(4.0),
                 text("AkTags will monitor this folder and tag all files automatically.")
                     .size(11)
-                    .color(Palette::TEXT_DIM),
+                    .color(colors.text_dim()),
                 Space::with_height(6.0),
                 text_input("~/Documents", &app.first_run_watch)
                     .on_input(Message::FirstRunWatchDirChanged)
@@ -94,10 +98,13 @@ pub fn view_first_run(app: &AkTags) -> Element<'_, Message> {
 // ── Settings panel ────────────────────────────────────────────────────────────
 
 pub fn view(app: &AkTags) -> Element<'_, Message> {
+    let t = &app.theme_type;
+    let colors = theme::default_colors(*t);
+
     let header = row![
         text("Settings").size(20),
         Space::with_width(Length::Fill),
-        button(text("← Back").size(13))
+        button(text("<- Back").size(13))
             .on_press(Message::SwitchPanel(Panel::Browser))
             .padding([6, 14]),
     ]
@@ -106,16 +113,16 @@ pub fn view(app: &AkTags) -> Element<'_, Message> {
 
     let content = column![
         // ── Ollama ────────────────────────────────────────────────────────
-        section_header("Ollama Connection".to_string()),
+        section_header("Ollama Connection".to_string(), &colors),
 
-        label("Base URL".to_string()),
+        label("Base URL".to_string(), &colors),
         text_input("https://ollama.akinus21.com", &app.settings_ollama_url)
             .on_input(Message::OllamaUrlChanged)
             .padding([8, 12])
             .width(400.0),
 
         Space::with_height(12.0),
-        label("Model".to_string()),
+        label("Model".to_string(), &colors),
         text_input("gpt-oss:20b-cloud", &app.settings_ollama_model)
             .on_input(Message::OllamaModelChanged)
             .padding([8, 12])
@@ -124,11 +131,11 @@ pub fn view(app: &AkTags) -> Element<'_, Message> {
         Space::with_height(24.0),
 
         // ── Watch Directories ─────────────────────────────────────────────
-        section_header("Watch Directories".to_string()),
+        section_header("Watch Directories".to_string(), &colors),
 
         {
             let dir_rows: Vec<Element<'_, Message>> = app.config.watch_dirs.iter()
-                .map(|dir| watch_dir_row(dir))
+                .map(|dir| watch_dir_row(dir, &colors))
                 .collect();
             Element::from(Column::with_children(dir_rows).spacing(6))
         },
@@ -150,17 +157,17 @@ pub fn view(app: &AkTags) -> Element<'_, Message> {
         Space::with_height(24.0),
 
         // ── Daemon ────────────────────────────────────────────────────────
-        section_header("Daemon".to_string()),
+        section_header("Daemon".to_string(), &colors),
 
         {
             let s = &app.daemon_stats;
             column![
-                stat_row("Status", if s.running { "Running" } else { "Stopped" }.to_string()),
-                stat_row("Processed", s.processed.to_string()),
-                stat_row("Errors", s.errors.to_string()),
-                stat_row("Queue", s.queue_size.to_string()),
+                stat_row("Status", if s.running { "Running" } else { "Stopped" }.to_string(), &colors),
+                stat_row("Processed", s.processed.to_string(), &colors),
+                stat_row("Errors", s.errors.to_string(), &colors),
+                stat_row("Queue", s.queue_size.to_string(), &colors),
                 if let Some(f) = &s.current_file {
-                    Element::from(stat_row("Current", f.clone()))
+                    Element::from(stat_row("Current", f.clone(), &colors))
                 } else {
                     Element::from(Space::with_height(0.0))
                 },
@@ -171,30 +178,32 @@ pub fn view(app: &AkTags) -> Element<'_, Message> {
         Space::with_height(24.0),
 
         // ── Theme ────────────────────────────────────────────────────────────
-        section_header("Appearance".to_string()),
+        section_header("Appearance".to_string(), &colors),
         row![
-            theme_button("Dark", ThemeType::Dark, app.theme),
+            theme_button("Dark", "Dark", app.theme_type == ThemeType::Dark),
             Space::with_width(8.0),
-            theme_button("Light", ThemeType::Light, app.theme),
+            theme_button("Light", "Light", app.theme_type == ThemeType::Light),
             Space::with_width(8.0),
-            theme_button("Eldritch", ThemeType::Eldritch, app.theme),
+            theme_button("PurpleHaze", "PurpleHaze", app.theme_type == ThemeType::PurpleHaze),
+            Space::with_width(8.0),
+            theme_button("Noctalia", "Noctalia", app.theme_type == ThemeType::Noctalia),
         ],
 
         Space::with_height(24.0),
 
         // ── Updates ────────────────────────────────────────────────────────────
-        section_header("Updates".to_string()),
+        section_header("Updates".to_string(), &colors),
         row![
             text(format!("Version {}", crate::updater::current_version())).size(12),
             Space::with_width(Length::Fill),
             match &app.update_status {
                 crate::updater::UpdateStatus::UpToDate => {
-                    Element::from(text("Up to date").size(12).color(Palette::GREEN))
+                    Element::from(text("Up to date").size(12).color(colors.green()))
                 }
                 crate::updater::UpdateStatus::Available { version, .. } => {
                     row![
                         text(format!("Update available: v{}", version)).size(12)
-                            .color(Palette::ACCENT),
+                            .color(colors.accent()),
                         Space::with_width(8.0),
                         button(text("Download").size(11))
                             .on_press(Message::UpdateDownload)
@@ -205,14 +214,14 @@ pub fn view(app: &AkTags) -> Element<'_, Message> {
                 crate::updater::UpdateStatus::Downloading { version, progress } => {
                     row![
                         text(format!("Downloading v{}... {:.0}%", version, progress)).size(12)
-                            .color(Palette::ACCENT2),
+                            .color(colors.accent2()),
                     ]
                     .into()
                 }
                 crate::updater::UpdateStatus::Ready { version, .. } => {
                     row![
                         text(format!("v{} ready to install", version)).size(12)
-                            .color(Palette::GREEN),
+                            .color(colors.green()),
                         Space::with_width(8.0),
                         button(text("Install & Restart").size(11))
                             .on_press(Message::UpdateInstall)
@@ -221,7 +230,7 @@ pub fn view(app: &AkTags) -> Element<'_, Message> {
                     .into()
                 }
                 crate::updater::UpdateStatus::Error(e) => {
-                    Element::from(text(format!("Error: {}", e)).size(12).color(Palette::RED))
+                    Element::from(text(format!("Error: {}", e)).size(12).color(colors.red()))
                 }
             },
         ],
@@ -254,7 +263,7 @@ pub fn view(app: &AkTags) -> Element<'_, Message> {
         ],
 
         if let Some(msg) = &app.status_message {
-            Element::from(text(msg).size(12).color(Palette::GREEN))
+            Element::from(text(msg).size(12).color(colors.green()))
         } else {
             Element::from(Space::with_height(0.0))
         },
@@ -271,11 +280,11 @@ pub fn view(app: &AkTags) -> Element<'_, Message> {
     .into()
 }
 
-fn watch_dir_row(dir: &PathBuf) -> Element<'_, Message> {
+fn watch_dir_row(dir: &PathBuf, colors: &theme::ThemeColors) -> Element<'_, Message> {
     let dir_str = dir.to_string_lossy().to_string();
     row![
         text(dir_str).size(13).width(Length::Fill),
-        button(text("×").size(14))
+        button(text("x").size(14))
             .on_press(Message::WatchDirRemove(dir.clone()))
             .padding([3, 8])
             .style(|_t, _s| button::Style::default()),
@@ -286,39 +295,38 @@ fn watch_dir_row(dir: &PathBuf) -> Element<'_, Message> {
     .into()
 }
 
-fn section_header(title: String) -> Element<'static, Message> {
+fn section_header(title: String, colors: &theme::ThemeColors) -> Element<'static, Message> {
     column![
-        text(title).size(13).color(Palette::ACCENT2),
+        text(title).size(13).color(colors.accent2()),
         Space::with_height(8.0),
     ]
     .into()
 }
 
-fn theme_button(label: &str, theme_type: ThemeType, current: ThemeType) -> Element<'_, Message> {
-    let is_active = theme_type == current;
+fn theme_button(label: &str, theme_name: &str, is_active: bool) -> Element<'_, Message> {
     button(
         text(label).size(13).color(if is_active {
-            Palette::ACCENT
+            iced::Color::from_rgba(0.486, 0.416, 0.969, 1.0)
         } else {
-            Palette::TEXT_DIM
+            iced::Color::from_rgba(0.545, 0.565, 0.690, 1.0)
         })
     )
-    .on_press(Message::ThemeChanged(theme_type))
+    .on_press(Message::ThemeChanged(theme_name.to_string()))
     .padding([8, 16])
     .style(|_t, _s| button::Style::default())
     .into()
 }
 
-fn label(s: String) -> Element<'static, Message> {
+fn label(s: String, colors: &theme::ThemeColors) -> Element<'static, Message> {
     text(s).size(11)
-        .color(Palette::TEXT_DIM)
+        .color(colors.text_dim())
         .into()
 }
 
-fn stat_row(label: &str, value: String) -> Element<'_, Message> {
+fn stat_row(label: &str, value: String, colors: &theme::ThemeColors) -> Element<'_, Message> {
     row![
         text(label).size(12)
-            .color(Palette::TEXT_DIM)
+            .color(colors.text_dim())
             .width(100.0),
         text(value).size(12),
     ]

@@ -6,7 +6,8 @@ use iced::{
     Alignment, Element, Length,
 };
 
-use super::{app::{AkTags, Message, Panel, ViewMode}, theme::*};
+use super::app::{AkTags, Message, Panel, ViewMode};
+use super::theme;
 use crate::db::FileRecord;
 
 pub fn view(app: &AkTags) -> Element<'_, Message> {
@@ -30,9 +31,9 @@ pub fn view(app: &AkTags) -> Element<'_, Message> {
 fn view_header(app: &AkTags) -> Element<'_, Message> {
     let ollama_ok = !app.config.ollama_base_url.is_empty();
     let status_color = if app.daemon_stats.running && ollama_ok {
-        Palette::GREEN
+        theme::default_colors(app.theme_type).green()
     } else {
-        Palette::RED
+        theme::default_colors(app.theme_type).red()
     };
 
     let status_label = if app.daemon_stats.running {
@@ -56,13 +57,13 @@ fn view_header(app: &AkTags) -> Element<'_, Message> {
     let queue_badge_owned = queue_badge;
 
     row![
-        text("AkTags").size(20).color(Palette::ACCENT),
+        text("AkTags").size(20).color(theme::default_colors(app.theme_type).accent()),
         Space::with_width(12.0),
         text("[*]").size(12).color(status_color),
         Space::with_width(8.0),
-        text(status_label_owned).size(12).color(Palette::TEXT_DIM),
+        text(status_label_owned).size(12).color(theme::default_colors(app.theme_type).text_dim()),
         Space::with_width(8.0),
-        text(queue_badge_owned).size(11).color(Palette::YELLOW),
+        text(queue_badge_owned).size(11).color(theme::default_colors(app.theme_type).yellow()),
         Space::with_width(Length::Fill),
         nav_button("Re-tag All", Message::RetagAll),
         Space::with_width(8.0),
@@ -108,9 +109,9 @@ fn tab_button(label: String, panel: Panel, app: &AkTags) -> Element<'_, Message>
     let active = app.panel == panel;
     button(
         text(label).size(13).color(if active {
-            Palette::ACCENT
+            theme::default_colors(app.theme_type).accent()
         } else {
-            Palette::TEXT_DIM
+            theme::default_colors(app.theme_type).text_dim()
         })
     )
     .on_press(Message::SwitchPanel(panel))
@@ -155,12 +156,12 @@ fn view_sidebar(app: &AkTags) -> Element<'_, Message> {
 
     let sidebar_content = column![
         // Categories section
-        text("Categories").size(11).color(Palette::TEXT_DIM),
+        text("Categories").size(11).color(theme::default_colors(app.theme_type).text_dim()),
         Space::with_height(8.0),
         Column::with_children(cat_items).spacing(2),
         horizontal_rule(1),
         Space::with_height(8.0),
-        text("Tags").size(11).color(Palette::TEXT_DIM),
+        text("Tags").size(11).color(theme::default_colors(app.theme_type).text_dim()),
         Space::with_height(8.0),
         scrollable(
             Row::with_children(tag_items)
@@ -188,13 +189,13 @@ fn category_item(
     button(
         row![
             text(label).size(13).color(if is_active {
-                Palette::ACCENT
+                theme::default_colors(app.theme_type).accent()
             } else {
-                Palette::TEXT
+                theme::default_colors(app.theme_type).text()
             }),
             Space::with_width(Length::Fill),
             text(count.to_string()).size(11)
-                .color(Palette::TEXT_DIM),
+                .color(theme::default_colors(app.theme_type).text_dim()),
         ]
         .align_y(Alignment::Center)
     )
@@ -252,7 +253,7 @@ fn view_toolbar(app: &AkTags) -> Element<'_, Message> {
             .padding([8, 14])
             .width(Length::Fill),
         Space::with_width(10.0),
-        text(count_label_owned).size(12).color(Palette::TEXT_DIM),
+        text(count_label_owned).size(12).color(theme::default_colors(app.theme_type).text_dim()),
         Space::with_width(10.0),
         button(text(view_icon).size(13))
             .on_press(Message::ViewToggled)
@@ -340,8 +341,8 @@ fn file_card(file: &FileRecord, _selected: bool) -> Element<'_, Message> {
     let card_content = column![
         text(icon).size(32),
         Space::with_height(8.0),
-        text(name).size(12).color(Palette::TEXT),
-        text(summary_short).size(11).color(Palette::TEXT_DIM),
+        text(name).size(12).color(theme::default_colors(app.theme_type).text()),
+        text(summary_short).size(11).color(theme::default_colors(app.theme_type).text_dim()),
         Space::with_height(4.0),
         Row::with_children(tags).spacing(3),
     ]
@@ -392,16 +393,16 @@ fn file_row(file: &FileRecord, _selected: bool) -> Element<'_, Message> {
         column![
             text(&file.filename).size(13),
             text(file.summary.as_deref().unwrap_or("")).size(11)
-                .color(Palette::TEXT_DIM),
+                .color(theme::default_colors(app.theme_type).text_dim()),
         ]
         .spacing(2)
         .width(Length::Fill),
         Row::with_children(tags).spacing(3),
         text(&file.category).size(11)
-            .color(Palette::TEXT_DIM)
+            .color(theme::default_colors(app.theme_type).text_dim())
             .width(80.0),
         text(fmt_size(file.size_bytes)).size(11)
-            .color(Palette::TEXT_DIM)
+            .color(theme::default_colors(app.theme_type).text_dim())
             .width(70.0),
     ]
     .spacing(12)
@@ -457,22 +458,22 @@ fn view_detail(app: &AkTags) -> Element<'_, Message> {
         text(file_type_icon(&file.extension)).size(40),
         text(&file.filename).size(14),
         text(&file.category).size(11)
-            .color(Palette::TEXT_DIM),
+            .color(theme::default_colors(app.theme_type).text_dim()),
         Space::with_height(4.0),
         text(fmt_size(file.size_bytes)).size(11)
-            .color(Palette::TEXT_DIM),
+            .color(theme::default_colors(app.theme_type).text_dim()),
         Space::with_height(12.0),
 
         // Summary
         text("Summary").size(11)
-            .color(Palette::TEXT_DIM),
+            .color(theme::default_colors(app.theme_type).text_dim()),
         text(file.summary.as_deref().unwrap_or("No summary yet"))
             .size(12),
         Space::with_height(12.0),
 
         // Tags
         text("Tags").size(11)
-            .color(Palette::TEXT_DIM),
+            .color(theme::default_colors(app.theme_type).text_dim()),
         Row::with_children(tags).spacing(4),
         Space::with_height(8.0),
 
@@ -493,9 +494,9 @@ fn view_detail(app: &AkTags) -> Element<'_, Message> {
 
         // Path
         text("Path").size(11)
-            .color(Palette::TEXT_DIM),
+            .color(theme::default_colors(app.theme_type).text_dim()),
         text(&file.path).size(11)
-            .color(Palette::TEXT_DIM),
+            .color(theme::default_colors(app.theme_type).text_dim()),
     ]
     .spacing(4)
     .padding(16);
@@ -515,7 +516,7 @@ fn empty_state<'a>(title: &'a str, subtitle: &'a str) -> Element<'a, Message> {
             Space::with_height(12.0),
             text(title).size(16),
             text(subtitle).size(13)
-                .color(Palette::TEXT_DIM),
+                .color(theme::default_colors(app.theme_type).text_dim()),
         ]
         .spacing(8)
         .align_x(Alignment::Center)
