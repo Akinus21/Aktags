@@ -31,7 +31,7 @@ impl ThemeType {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct ThemeColors {
     pub bg: [f32; 4],
     pub surface: [f32; 4],
