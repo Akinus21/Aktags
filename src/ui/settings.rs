@@ -162,12 +162,12 @@ pub fn view(app: &AkTags) -> Element<'_, Message> {
         {
             let s = &app.daemon_stats;
             column![
-                stat_row("Status", if s.running { "Running" } else { "Stopped" }.to_string(), colors),
-                stat_row("Processed", s.processed.to_string(), colors),
-                stat_row("Errors", s.errors.to_string(), colors),
-                stat_row("Queue", s.queue_size.to_string(), colors),
+                stat_row("Status".to_string(), if s.running { "Running" } else { "Stopped" }.to_string()),
+                stat_row("Processed".to_string(), s.processed.to_string()),
+                stat_row("Errors".to_string(), s.errors.to_string()),
+                stat_row("Queue".to_string(), s.queue_size.to_string()),
                 if let Some(f) = &s.current_file {
-                    Element::from(stat_row("Current", f.clone(), colors))
+                    Element::from(stat_row("Current".to_string(), f.clone()))
                 } else {
                     Element::from(Space::with_height(0.0))
                 },
@@ -323,7 +323,7 @@ fn label(s: String, colors: &theme::ThemeColors) -> Element<'static, Message> {
         .into()
 }
 
-fn stat_row(label: &str, value: String, _colors: theme::ThemeColors) -> Element<'static, Message> {
+fn stat_row(label: String, value: String) -> Element<'static, Message> {
     row![
         text(label).size(12)
             .width(100.0),
