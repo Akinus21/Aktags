@@ -126,7 +126,7 @@ pub fn ensure_default_themes() {
     }
 }
 
-fn default_colors(t: ThemeType) -> ThemeColors {
+pub fn default_colors(t: ThemeType) -> ThemeColors {
     match t {
         ThemeType::Dark => ThemeColors {
             bg: [0.059, 0.067, 0.090, 1.0],
