@@ -323,10 +323,9 @@ fn label(s: String, colors: &theme::ThemeColors) -> Element<'static, Message> {
         .into()
 }
 
-fn stat_row(label: &str, value: String, colors: theme::ThemeColors) -> Element<'static, Message> {
+fn stat_row(label: &str, value: String, _colors: theme::ThemeColors) -> Element<'static, Message> {
     row![
         text(label).size(12)
-            .color(colors.text_dim())
             .width(100.0),
         text(value).size(12),
     ]
