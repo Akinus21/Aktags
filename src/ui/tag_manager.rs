@@ -235,7 +235,7 @@ fn taxonomy_tag_chip(
     name: String,
     meta: &crate::taxonomy::TagMeta,
     colors: &theme::ThemeColors,
-) -> Element<'_, Message> {
+) -> Element<'static, Message> {
     let aliases_text = if meta.aliases.is_empty() {
         String::new()
     } else {

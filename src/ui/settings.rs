@@ -280,7 +280,7 @@ pub fn view(app: &AkTags) -> Element<'_, Message> {
     .into()
 }
 
-fn watch_dir_row(dir: &PathBuf, colors: &theme::ThemeColors) -> Element<'_, Message> {
+fn watch_dir_row(dir: &PathBuf, colors: &theme::ThemeColors) -> Element<'static, Message> {
     let dir_str = dir.to_string_lossy().to_string();
     row![
         text(dir_str).size(13).width(Length::Fill),
@@ -303,7 +303,7 @@ fn section_header(title: String, colors: &theme::ThemeColors) -> Element<'static
     .into()
 }
 
-fn theme_button(label: &str, theme_name: &str, is_active: bool) -> Element<'_, Message> {
+fn theme_button(label: &str, theme_name: &str, is_active: bool) -> Element<'static, Message> {
     button(
         text(label).size(13).color(if is_active {
             iced::Color::from_rgba(0.486, 0.416, 0.969, 1.0)
@@ -323,7 +323,7 @@ fn label(s: String, colors: &theme::ThemeColors) -> Element<'static, Message> {
         .into()
 }
 
-fn stat_row(label: &str, value: String, colors: &theme::ThemeColors) -> Element<'_, Message> {
+fn stat_row(label: &str, value: String, colors: &theme::ThemeColors) -> Element<'static, Message> {
     row![
         text(label).size(12)
             .color(colors.text_dim())

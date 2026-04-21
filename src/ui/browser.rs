@@ -7,7 +7,7 @@ use iced::{
 };
 
 use super::app::{AkTags, Message, Panel, ViewMode};
-use super::theme::{self, PADDING, DETAIL_W};
+use super::theme::{self, PADDING, DETAIL_W, HEADER_H, SIDEBAR_W, SPACING, CARD_W, CARD_H};
 use crate::db::FileRecord;
 
 pub fn view(app: &AkTags) -> Element<'_, Message> {
@@ -123,12 +123,13 @@ fn tab_button(label: String, panel: Panel, app: &AkTags) -> Element<'_, Message>
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 
 fn view_sidebar(app: &AkTags) -> Element<'_, Message> {
+    let colors = theme::default_colors(app.theme_type);
     let stats = app.stats.as_ref();
     let total = stats.map(|s| s.total).unwrap_or(0);
 
     // Categories
     let mut cat_items: Vec<Element<'_, Message>> = vec![
-        category_item(String::from("All Files"), total, None, app.active_category.clone()),
+        category_item(String::from("All Files"), total, None, app.active_category.clone(), app.theme_type),
     ];
     if let Some(s) = stats {
         for (cat, count) in &s.by_category {
@@ -137,6 +138,7 @@ fn view_sidebar(app: &AkTags) -> Element<'_, Message> {
                 *count,
                 Some(cat.clone()),
                 app.active_category.clone(),
+                app.theme_type,
             ));
         }
     }
@@ -156,12 +158,12 @@ fn view_sidebar(app: &AkTags) -> Element<'_, Message> {
 
     let sidebar_content = column![
         // Categories section
-        text("Categories").size(11).color(theme::default_colors(app.theme_type).text_dim()),
+        text("Categories").size(11).color(colors.text_dim()),
         Space::with_height(8.0),
         Column::with_children(cat_items).spacing(2),
         horizontal_rule(1),
         Space::with_height(8.0),
-        text("Tags").size(11).color(theme::default_colors(app.theme_type).text_dim()),
+        text("Tags").size(11).color(colors.text_dim()),
         Space::with_height(8.0),
         scrollable(
             Row::with_children(tag_items)
@@ -184,18 +186,20 @@ fn category_item(
     count: i64,
     cat: Option<String>,
     active: Option<String>,
+    theme_type: theme::ThemeType,
 ) -> Element<'static, Message> {
+    let colors = theme::default_colors(theme_type);
     let is_active = active == cat;
     button(
         row![
             text(label).size(13).color(if is_active {
-                theme::default_colors(app.theme_type).accent()
+                colors.accent()
             } else {
-                theme::default_colors(app.theme_type).text()
+                colors.text()
             }),
             Space::with_width(Length::Fill),
             text(count.to_string()).size(11)
-                .color(theme::default_colors(app.theme_type).text_dim()),
+                .color(colors.text_dim()),
         ]
         .align_y(Alignment::Center)
     )
