@@ -187,7 +187,7 @@ impl Daemon {
                         let cfg = config.lock().unwrap().clone();
                         match event {
                             FileEvent::Process(path) => {
-                                let _ = tokio::spawn(process_file(&path, &cfg, &pool, &client, &stats));
+                                process_file(&path, &cfg, &pool, &client, &stats).await;
                             }
                             FileEvent::Delete(path) => {
                                 let _ = db::remove_file(&pool, path.to_str().unwrap_or(""));

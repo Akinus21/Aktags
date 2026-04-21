@@ -7,7 +7,7 @@ use iced::{
 };
 
 use super::app::{AkTags, Message, Panel, ViewMode};
-use super::theme;
+use super::theme::{self, PADDING, DETAIL_W};
 use crate::db::FileRecord;
 
 pub fn view(app: &AkTags) -> Element<'_, Message> {
@@ -310,7 +310,7 @@ fn view_grid(app: &AkTags) -> Element<'_, Message> {
     }
 
     let cards: Vec<Element<'_, Message>> = app.files.iter()
-        .map(|f| file_card(f, app.selected_file.as_ref().map(|s| s.id) == Some(f.id)))
+        .map(|f| file_card(f, app.theme_type, app.selected_file.as_ref().map(|s| s.id) == Some(f.id)))
         .collect();
 
     scrollable(
@@ -322,7 +322,8 @@ fn view_grid(app: &AkTags) -> Element<'_, Message> {
     .into()
 }
 
-fn file_card(file: &FileRecord, _selected: bool) -> Element<'_, Message> {
+fn file_card(file: &FileRecord, theme_type: theme::ThemeType, _selected: bool) -> Element<'_, Message> {
+    let colors = theme::default_colors(theme_type);
     let icon = file_type_icon(&file.extension);
     let name = truncate(&file.filename, 22);
     let summary = file.summary.as_deref().unwrap_or("").to_string();
@@ -341,8 +342,8 @@ fn file_card(file: &FileRecord, _selected: bool) -> Element<'_, Message> {
     let card_content = column![
         text(icon).size(32),
         Space::with_height(8.0),
-        text(name).size(12).color(theme::default_colors(app.theme_type).text()),
-        text(summary_short).size(11).color(theme::default_colors(app.theme_type).text_dim()),
+        text(name).size(12).color(colors.text()),
+        text(summary_short).size(11).color(colors.text_dim()),
         Space::with_height(4.0),
         Row::with_children(tags).spacing(3),
     ]
@@ -366,7 +367,7 @@ fn view_list(app: &AkTags) -> Element<'_, Message> {
     }
 
     let rows: Vec<Element<'_, Message>> = app.files.iter()
-        .map(|f| file_row(f, app.selected_file.as_ref().map(|s| s.id) == Some(f.id)))
+        .map(|f| file_row(f, app.theme_type, app.selected_file.as_ref().map(|s| s.id) == Some(f.id)))
         .collect();
 
     Column::with_children(rows)
@@ -376,7 +377,8 @@ fn view_list(app: &AkTags) -> Element<'_, Message> {
         .into()
 }
 
-fn file_row(file: &FileRecord, _selected: bool) -> Element<'_, Message> {
+fn file_row(file: &FileRecord, theme_type: theme::ThemeType, _selected: bool) -> Element<'_, Message> {
+    let colors = theme::default_colors(theme_type);
     let icon = file_type_icon(&file.extension);
     let tags: Vec<Element<'_, Message>> = file.tags.iter().take(4)
         .map(|t| {
@@ -393,16 +395,16 @@ fn file_row(file: &FileRecord, _selected: bool) -> Element<'_, Message> {
         column![
             text(&file.filename).size(13),
             text(file.summary.as_deref().unwrap_or("")).size(11)
-                .color(theme::default_colors(app.theme_type).text_dim()),
+                .color(colors.text_dim()),
         ]
         .spacing(2)
         .width(Length::Fill),
         Row::with_children(tags).spacing(3),
         text(&file.category).size(11)
-            .color(theme::default_colors(app.theme_type).text_dim())
+            .color(colors.text_dim())
             .width(80.0),
         text(fmt_size(file.size_bytes)).size(11)
-            .color(theme::default_colors(app.theme_type).text_dim())
+            .color(colors.text_dim())
             .width(70.0),
     ]
     .spacing(12)
