@@ -310,7 +310,7 @@ fn filter_chip(label: String, on_remove: Message) -> Element<'static, Message> {
 
 fn view_grid(app: &AkTags) -> Element<'_, Message> {
     if app.files.is_empty() {
-        return empty_state("No files found", "Try adjusting your search or filters.");
+        return empty_state("No files found", "Try adjusting your search or filters.", app.theme_type);
     }
 
     let cards: Vec<Element<'_, Message>> = app.files.iter()
@@ -367,7 +367,7 @@ fn file_card(file: &FileRecord, theme_type: theme::ThemeType, _selected: bool) -
 
 fn view_list(app: &AkTags) -> Element<'_, Message> {
     if app.files.is_empty() {
-        return empty_state("No files found", "Try adjusting your search or filters.");
+        return empty_state("No files found", "Try adjusting your search or filters.", app.theme_type);
     }
 
     let rows: Vec<Element<'_, Message>> = app.files.iter()
@@ -515,14 +515,15 @@ fn view_detail(app: &AkTags) -> Element<'_, Message> {
 
 // ── Empty state ───────────────────────────────────────────────────────────────
 
-fn empty_state<'a>(title: &'a str, subtitle: &'a str) -> Element<'a, Message> {
+fn empty_state<'a>(title: &'a str, subtitle: &'a str, theme_type: theme::ThemeType) -> Element<'a, Message> {
+    let colors = theme::default_colors(theme_type);
     container(
         column![
-            text("🔍").size(48),
+            text("?").size(48),
             Space::with_height(12.0),
             text(title).size(16),
             text(subtitle).size(13)
-                .color(theme::default_colors(app.theme_type).text_dim()),
+                .color(colors.text_dim()),
         ]
         .spacing(8)
         .align_x(Alignment::Center)
