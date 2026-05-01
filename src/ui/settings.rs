@@ -187,18 +187,13 @@ pub fn view(app: &AkTags) -> Element<'_, Message> {
 
         Space::with_height(8.0),
         label("API Key".to_string(), colors),
-        {
-            let api_key_display = if app.settings_cloud_api_key.is_empty() {
-                String::new()
-            } else {
-                "••••••••".to_string()
-            };
-            text_input("Enter API key...", &api_key_display)
-                .on_input(Message::CloudApiKeyChanged)
-                .padding([8, 12])
-                .width(400.0)
-                .into()
-        },
+        text_input(
+            "Enter API key...",
+            if app.settings_cloud_api_key.is_empty() { "" } else { "••••••••" }
+        )
+        .on_input(Message::CloudApiKeyChanged)
+        .padding([8, 12])
+        .width(400.0),
 
         Space::with_height(8.0),
         // Sync status row
@@ -388,7 +383,7 @@ fn theme_button<'a>(label: &'a str, theme_name: &'a str, is_active: bool, colors
     )
     .on_press(Message::ThemeChanged(theme_name.to_string()))
     .padding([8, 16])
-    .style(|_theme, _status| button::Style {
+    .style(move |_theme, _status| button::Style {
         background: if is_active { Some(colors.surface2().into()) } else { None },
         ..Default::default()
     })

@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use ed25519_dalek::{SigningKey, VerifyingKey};
+use ed25519_dalek::SigningKey;
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;

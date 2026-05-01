@@ -459,7 +459,7 @@ impl AkTags {
                             Ok(identity) => {
                                 match crate::sync::run_sync(&cfg, &pool, &identity).await {
                                     Ok(()) => Message::SyncComplete,
-                                    Err(e) => Message::SyncComplete,
+                                    Err(_e) => Message::SyncComplete,
                                 }
                             }
                             Err(_) => Message::SyncComplete,

@@ -225,7 +225,7 @@ pub fn enforce_size_cap(max_size_mb: u32) -> Result<()> {
     let mut stmt = conn.prepare(
         "SELECT id, object_hash, compressed_bytes FROM graveyard ORDER BY replaced_at ASC"
     )?;
-    let mut entries = Vec::new();
+    let mut entries: Vec<(i64, String, i64)> = Vec::new();
     for row in stmt.query_map([], |row| {
         Ok((row.get(0)?, row.get(1)?, row.get(2)?))
     })? {
