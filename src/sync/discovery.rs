@@ -1,6 +1,5 @@
 use anyhow::Result;
-use std::net::IpAddr;
-use tracing::{debug, error, info};
+use tracing::{debug, info};
 
 /// Attempt to discover AKCloud on the local network via mDNS.
 pub async fn discover_lan_server() -> Option<String> {

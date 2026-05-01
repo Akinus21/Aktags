@@ -1,7 +1,6 @@
 use anyhow::{anyhow, Context, Result};
 use reqwest::header::{AUTHORIZATION, HeaderMap};
 use serde::{Deserialize, Serialize};
-use std::path::Path;
 
 use crate::db::DbPool;
 
@@ -132,11 +131,10 @@ pub async fn upload_file(
     local_path: &str,
 ) -> Result<()> {
     let url = format!("{}/api/sync/files/{}", base, remote_path);
-    let file = tokio::fs::File::open(local_path).await?;
-    let stream = reqwest::Body::from(file);
+    let body = tokio::fs::read(local_path).await?;
     let resp = client
         .post(&url)
-        .body(stream)
+        .body(body)
         .send()
         .await?;
     if resp.status().is_success() {

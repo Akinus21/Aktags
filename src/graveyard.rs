@@ -38,7 +38,7 @@ fn objects_dir() -> PathBuf {
     path.join(".graveyard").join("objects")
 }
 
-fn init_graveyard_db() -> Result<> {
+fn init_graveyard_db() -> Result<()> {
     let db_path = graveyard_db_path();
     std::fs::create_dir_all(db_path.parent().unwrap())?;
 
@@ -70,10 +70,10 @@ pub fn entomb(
     original_hash: &str,
     replaced_by: &str,
     peer_node_id: Option<&str>,
-    tags: Option<&[str]>,
+    tags: Option<&[String]>,
     summary: Option<&str>,
     ttl_days: u32,
-) -> Result<> {
+) -> Result<()> {
     init_graveyard_db()?;
 
     let content = fs::read(original_path)
@@ -135,9 +135,13 @@ pub fn unearth(original_path: &Path) -> Result<Option<Vec<u8>>> {
     )?;
     let rows = stmt.query_map(params![original_path.to_string_lossy().to_string()], |row| {
         row.get::<_, String>(0)
-    })?.collect::<Result<Vec<_>>, _>()?;
+    })?;
+    let mut tags = Vec::new();
+    for row in rows {
+        tags.push(row?);
+    }
 
-    if let Some(hash) = rows.into_iter().next() {
+    if let Some(hash) = tags.into_iter().next() {
         let prefix = &hash[..2];
         let suffix = &hash[2..];
         let obj_path = objects_dir().join(prefix).join(format!("{}.zst", suffix));
@@ -152,7 +156,7 @@ pub fn unearth(original_path: &Path) -> Result<Option<Vec<u8>>> {
 }
 
 /// Run the reaper: delete expired entries and orphaned objects.
-pub fn reap() -> Result<> {
+pub fn reap() -> Result<()> {
     let db_path = graveyard_db_path();
     if !db_path.exists() {
         return Ok(());
@@ -165,9 +169,12 @@ pub fn reap() -> Result<> {
     let mut stmt = conn.prepare(
         "SELECT id, object_hash FROM graveyard WHERE expires_at < ?"
     )?;
-    let expired: Vec<(i64, String)> = stmt.query_map(params![&now], |row| {
+    let mut expired = Vec::new();
+    for row in stmt.query_map(params![&now], |row| {
         Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?))
-    })?.collect::<Result<Vec<_>>, _>()?;
+    })? {
+        expired.push(row?);
+    }
 
     for (id, hash) in expired {
         conn.execute("DELETE FROM graveyard WHERE id = ?", params![id])?;
@@ -196,7 +203,7 @@ pub fn reap() -> Result<> {
 }
 
 /// Enforce max_size_mb by deleting oldest-first when cap is exceeded.
-pub fn enforce_size_cap(max_size_mb: u32) -> Result<> {
+pub fn enforce_size_cap(max_size_mb: u32) -> Result<()> {
     let db_path = graveyard_db_path();
     if !db_path.exists() {
         return Ok(());
@@ -218,9 +225,12 @@ pub fn enforce_size_cap(max_size_mb: u32) -> Result<> {
     let mut stmt = conn.prepare(
         "SELECT id, object_hash, compressed_bytes FROM graveyard ORDER BY replaced_at ASC"
     )?;
-    let entries: Vec<(i64, String, i64)> = stmt.query_map([], |row| {
+    let mut entries = Vec::new();
+    for row in stmt.query_map([], |row| {
         Ok((row.get(0)?, row.get(1)?, row.get(2)?))
-    })?.collect::<Result<Vec<_>>, _>()?;
+    })? {
+        entries.push(row?);
+    }
 
     let mut current = total_compressed;
     for (id, hash, bytes) in entries {

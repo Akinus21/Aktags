@@ -1,6 +1,4 @@
 use anyhow::{Context, Result};
-use std::sync::Arc;
-use tokio::sync::Mutex;
 use tracing::{error, info, warn};
 
 use crate::config::CloudConfig;
@@ -11,7 +9,7 @@ pub mod discovery;
 pub mod identity;
 
 /// Run a full sync cycle against AKCloud.
-pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::sync::identity::Identity) -> Result<> {
+pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::sync::identity::Identity) -> Result<()> {
     if !config.enabled {
         return Ok(());
     }
@@ -112,10 +110,6 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
         if mtime_local > mtime_server {
             // Local wins → upload
             let local_disk = shellexpand::tilde(&local.path).to_string();
-            // Before overwriting on server, no need to entomb server since server
-            // already has its own graveyard.  But we DO need to archive the local
-            // winner on the local graveyard before it is replaced by a download.
-            // In this case local wins, upload to server.
             match client::upload_file(&http, base, &local.path, &local_disk).await {
                 Ok(()) => {
                     info!("[sync] uploaded {} (local newer)", path);

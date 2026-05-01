@@ -1,6 +1,6 @@
 use iced::{
     widget::{
-        button, column, container, horizontal_rule, row, scrollable, text,
+        button, column, container, row, scrollable, text,
         text_input, toggler, Column, Space,
     },
     Alignment, Element, Length,
@@ -95,7 +95,7 @@ pub fn view_first_run(app: &AkTags) -> Element<'_, Message> {
         .center_y(Length::Fill)
         .width(Length::Fill)
         .height(Length::Fill)
-        .style(|_theme| container::Style {
+        .style(move |_theme| container::Style {
             background: Some(theme::default_colors(t).bg().into()),
             ..Default::default()
         })
@@ -173,8 +173,8 @@ pub fn view(app: &AkTags) -> Element<'_, Message> {
             Space::with_width(Length::Fill),
             toggler(
                 app.settings_cloud_enabled,
-                Message::CloudEnabledToggled,
-            ),
+            )
+            .on_toggle(Message::CloudEnabledToggled),
         ]
         .align_y(Alignment::Center),
 
@@ -378,7 +378,7 @@ fn section_header(title: String, colors: theme::ThemeColors) -> Element<'static,
     .into()
 }
 
-fn theme_button(label: &str, theme_name: &str, is_active: bool, colors: theme::ThemeColors) -> Element<Message> {
+fn theme_button<'a>(label: &'a str, theme_name: &'a str, is_active: bool, colors: theme::ThemeColors) -> Element<'a, Message> {
     button(
         text(label).size(13).color(if is_active {
             colors.accent()

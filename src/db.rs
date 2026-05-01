@@ -398,7 +398,11 @@ pub fn get_tags_for_file(pool: &DbPool, file_id: i64) -> Result<Vec<String>> {
     let rows = stmt.query_map(params![file_id], |row| {
         row.get::<_, String>(0)
     })?;
-    rows.collect::<Result<Vec<_>>, _>()
+    let mut tags = Vec::new();
+    for row in rows {
+        tags.push(row?);
+    }
+    Ok(tags)
 }
 
 pub fn tag_file(pool: &DbPool, file_id: i64, tag: &str) -> Result<()> {

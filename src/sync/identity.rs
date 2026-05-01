@@ -30,7 +30,7 @@ pub fn load_or_generate_node_id() -> Result<String> {
     // Generate new keypair
     let mut csprng = OsRng;
     let signing_key = SigningKey::generate(&mut csprng);
-    let verifying_key: &VerifyingKey = signing_key.verifying_key();
+    let verifying_key = signing_key.verifying_key();
     let public_key_bytes = verifying_key.to_bytes();
     let public_key_hex = hex::encode(&public_key_bytes);
 
