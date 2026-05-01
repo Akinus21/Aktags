@@ -2,10 +2,12 @@ mod config;
 mod daemon;
 mod db;
 mod extractor;
+mod graveyard;
 mod tagger;
 mod taxonomy;
 mod ui;
 mod updater;
+mod sync;
 
 use anyhow::{Context, Result};
 use std::env;

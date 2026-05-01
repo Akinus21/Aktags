@@ -13,6 +13,8 @@ pub struct Config {
     pub ocr_enabled: bool,
     pub supported_extensions: SupportedExtensions,
     pub ui: UiConfig,
+    pub cloud: CloudConfig,
+    pub graveyard: GraveyardConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -32,6 +34,46 @@ pub struct UiConfig {
     pub sidebar_width: u32,
     pub detail_panel_width: u32,
     pub theme: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CloudConfig {
+    pub enabled: bool,
+    pub url: String,
+    pub api_key: String,
+    pub node_id: String,
+    pub sync_interval_secs: u64,
+    pub sync_on_file_change: bool,
+}
+
+impl Default for CloudConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            url: String::new(),
+            api_key: String::new(),
+            node_id: String::new(),
+            sync_interval_secs: 300,
+            sync_on_file_change: true,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GraveyardConfig {
+    pub path: String,
+    pub ttl_days: u32,
+    pub max_size_mb: u32,
+}
+
+impl Default for GraveyardConfig {
+    fn default() -> Self {
+        Self {
+            path: "~/.graveyard".to_string(),
+            ttl_days: 30,
+            max_size_mb: 500,
+        }
+    }
 }
 
 fn home_dir() -> PathBuf {
@@ -54,6 +96,8 @@ impl Default for Config {
             ocr_enabled: true,
             supported_extensions: SupportedExtensions::default(),
             ui: UiConfig::default(),
+            cloud: CloudConfig::default(),
+            graveyard: GraveyardConfig::default(),
         }
     }
 }
@@ -165,6 +209,13 @@ pub fn load() -> Result<Config> {
             .map(PathBuf::from)
             .collect();
         if !dirs.is_empty() { config.watch_dirs = dirs; }
+    }
+
+    // Auto-populate node_id from identity.key on first run if missing
+    if config.cloud.node_id.is_empty() && config.cloud.enabled {
+        if let Ok(id) = crate::sync::identity::load_or_generate_node_id() {
+            config.cloud.node_id = id;
+        }
     }
 
     Ok(config)

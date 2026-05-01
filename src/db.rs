@@ -391,3 +391,39 @@ pub fn clear_errors(pool: &DbPool) -> Result<usize> {
     )?;
     Ok(n)
 }
+
+pub fn get_tags_for_file(pool: &DbPool, file_id: i64) -> Result<Vec<String>> {
+    let conn = pool.get()?;
+    let mut stmt = conn.prepare("SELECT tag FROM tag_index WHERE file_id = ?")?;
+    let rows = stmt.query_map(params![file_id], |row| {
+        row.get::<_, String>(0)
+    })?;
+    rows.collect::<Result<Vec<_>>, _>()
+}
+
+pub fn tag_file(pool: &DbPool, file_id: i64, tag: &str) -> Result<()> {
+    let conn = pool.get()?;
+    // First get existing tags
+    let existing: Vec<String> = get_tags_for_file(pool, file_id)?;
+    if existing.contains(&tag.to_lowercase()) {
+        return Ok(());
+    }
+    let mut tags = existing;
+    tags.push(tag.to_lowercase());
+    
+    // Update files JSON tags column
+    let tags_json = serde_json::to_string(&tags)?;
+    let now = Utc::now().to_rfc3339();
+    conn.execute(
+        "UPDATE files SET tags = ?, tagged_at = ? WHERE id = ?",
+        params![tags_json, now, file_id],
+    )?;
+    
+    // Insert into tag_index
+    conn.execute(
+        "INSERT OR IGNORE INTO tag_index (tag, file_id) VALUES (?, ?)",
+        params![tag.to_lowercase(), file_id],
+    )?;
+    
+    Ok(())
+}

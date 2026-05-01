@@ -15,30 +15,10 @@ use crate::updater::{UpdateStatus as UpdaterStatus, check_for_update_async};
 pub fn run(cfg: Config, pool: DbPool) -> iced::Result {
     let (app, cmd) = AkTags::new((cfg, pool));
 
-    let app = Arc::new(app);
-
-    iced::application("AkTags", app_update, app_view)
-        .subscription(app_subscription)
-        .theme(app_theme)
-        .run_with(move || {
-            (Arc::clone(&app), cmd)
-        })
-}
-
-fn app_theme(app: &Arc<AkTags>) -> Theme {
-    theme::iced_theme(app.theme_type)
-}
-
-fn app_update(app: &mut Arc<AkTags>, msg: Message) -> Task<Message> {
-    Arc::get_mut(app).unwrap().update(msg)
-}
-
-fn app_view(app: &Arc<AkTags>) -> Element<'_, Message> {
-    (*app).view()
-}
-
-fn app_subscription(app: &Arc<AkTags>) -> Subscription<Message> {
-    (*app).subscription()
+    iced::application("AkTags", AkTags::update, AkTags::view)
+        .subscription(AkTags::subscription)
+        .theme(AkTags::theme)
+        .run_with(move || (app, cmd))
 }
 
 // ── Panels ────────────────────────────────────────────────────────────────────
@@ -106,6 +86,11 @@ pub enum Message {
     UpdateCheckResult(crate::updater::UpdateStatus),
     UpdateDownload,
     UpdateInstall,
+    SyncNow,
+    SyncComplete,
+    CloudUrlChanged(String),
+    CloudApiKeyChanged(String),
+    CloudEnabledToggled(bool),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -113,6 +98,7 @@ pub enum ViewMode { Grid, List }
 
 // ── App state ─────────────────────────────────────────────────────────────────
 
+#[derive(Clone)]
 pub struct AkTags {
     pub config: Config,
     pub pool: DbPool,
@@ -137,6 +123,9 @@ pub struct AkTags {
     pub settings_ollama_url: String,
     pub settings_ollama_model: String,
     pub settings_watch_dir_input: String,
+    pub settings_cloud_url: String,
+    pub settings_cloud_api_key: String,
+    pub settings_cloud_enabled: bool,
     pub first_run_url: String,
     pub first_run_model: String,
     pub first_run_watch: String,
@@ -144,6 +133,16 @@ pub struct AkTags {
     pub status_message: Option<String>,
     pub theme_type: theme::ThemeType,
     pub update_status: UpdaterStatus,
+    pub sync_status: SyncStatus,
+}
+
+#[derive(Debug, Clone)]
+pub enum SyncStatus {
+    Idle,
+    Connecting,
+    Synced,
+    Syncing,
+    Error(String),
 }
 
 impl AkTags {
@@ -164,7 +163,7 @@ impl AkTags {
         let initial_panel = if is_first_run { Panel::FirstRun } else { Panel::Browser };
 
         let app = Self {
-            config,
+            config: config.clone(),
             pool,
             daemon: Arc::new(Mutex::new(daemon)),
             shutdown_tx: None,
@@ -187,6 +186,9 @@ impl AkTags {
             settings_ollama_url,
             settings_ollama_model,
             settings_watch_dir_input: String::new(),
+            settings_cloud_url: config.cloud.url.clone(),
+            settings_cloud_api_key: config.cloud.api_key.clone(),
+            settings_cloud_enabled: config.cloud.enabled,
             first_run_url,
             first_run_model,
             first_run_watch,
@@ -194,6 +196,7 @@ impl AkTags {
             status_message: None,
             theme_type,
             update_status: UpdaterStatus::UpToDate,
+            sync_status: SyncStatus::Idle,
         };
 
         let cmd = if app.panel == Panel::Browser {
@@ -219,7 +222,7 @@ impl AkTags {
     }
 
     pub fn theme(&self) -> Theme {
-        Theme::Dark
+        theme::iced_theme(self.theme_type)
     }
 
     pub fn update(&mut self, message: Message) -> Task<Message> {
@@ -391,6 +394,10 @@ impl AkTags {
             Message::OllamaModelChanged(s)   => { self.settings_ollama_model = s; }
             Message::WatchDirInputChanged(s) => { self.settings_watch_dir_input = s; }
 
+            Message::CloudUrlChanged(s)      => { self.settings_cloud_url = s; }
+            Message::CloudApiKeyChanged(s)   => { self.settings_cloud_api_key = s; }
+            Message::CloudEnabledToggled(v)  => { self.settings_cloud_enabled = v; }
+
             Message::WatchDirAdd(dir) => {
                 let path = PathBuf::from(shellexpand::tilde(&dir).as_ref());
                 if !self.config.watch_dirs.contains(&path) {
@@ -412,6 +419,9 @@ impl AkTags {
             Message::SaveSettings => {
                 self.config.ollama_base_url = self.settings_ollama_url.clone();
                 self.config.ollama_model    = self.settings_ollama_model.clone();
+                self.config.cloud.url       = self.settings_cloud_url.clone();
+                self.config.cloud.api_key   = self.settings_cloud_api_key.clone();
+                self.config.cloud.enabled   = self.settings_cloud_enabled;
                 let _ = config::save(&self.config);
                 self.daemon.lock().unwrap().update_config(self.config.clone());
                 self.status_message = Some("Settings saved".into());
@@ -437,6 +447,31 @@ impl AkTags {
                         self.shutdown_tx = Some(tx);
                     }
                 }
+            }
+
+            Message::SyncNow => {
+                self.sync_status = SyncStatus::Connecting;
+                let cfg = self.config.cloud.clone();
+                let pool = self.pool.clone();
+                return Task::perform(async move {
+                    if cfg.enabled {
+                        match crate::sync::identity::load_identity() {
+                            Ok(identity) => {
+                                match crate::sync::run_sync(&cfg, &pool, &identity).await {
+                                    Ok(()) => Message::SyncComplete,
+                                    Err(e) => Message::SyncComplete,
+                                }
+                            }
+                            Err(_) => Message::SyncComplete,
+                        }
+                    } else {
+                        Message::SyncComplete
+                    }
+                }, |msg| msg);
+            }
+
+            Message::SyncComplete => {
+                self.sync_status = SyncStatus::Synced;
             }
 
             Message::CheckForUpdate => {

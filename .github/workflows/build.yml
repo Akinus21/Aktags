@@ -28,7 +28,8 @@ jobs:
             libxkbcommon-dev \
             libwayland-dev \
             libxkbcommon-x11-dev \
-            pkg-config
+            pkg-config \
+            libssl-dev
 
       - name: Cache cargo
         uses: actions/cache@v4
@@ -72,7 +73,9 @@ jobs:
           echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
           BASE=${LATEST_TAG#v}
           IFS='.' read -r MAJOR MINOR PATCH <<< "$BASE"
-          PATCH=$((PATCH + 1))
+          while git tag | grep -q "^v${MAJOR}.${MINOR}.${PATCH}$"; do
+            PATCH=$((PATCH + 1))
+          done
           NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
           echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
         shell: bash
@@ -113,43 +116,57 @@ jobs:
             --repo ${{ github.repository }}
         shell: bash
 
-      - name: Upload artifact
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: aktags-${{ steps.version.outputs.new_tag }}-linux-x86_64
-          path: target/release/aktags
-          retention-days: 30
-          if-no-files-found: error
-
       - name: Update Homebrew tap
         if: ${{ steps.version.outputs.new_tag != '' }}
         env:
-          TAP_TOKEN: ${{ secrets.TAP_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          TAG_NAME: ${{ steps.version.outputs.new_tag }}
+          SHA256: ${{ steps.release.outputs.sha256 }}
         run: |
-          set -e
           REPO="Akinus21/homebrew-tap"
-          TAG="${{ steps.version.outputs.new_tag }}"
-          SHA256="${{ steps.release.outputs.sha256 }}"
-          git clone https://x-access-token:${TAP_TOKEN}@github.com/${REPO}.git tap-repo
+          git clone https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git tap-repo
           cd tap-repo
-          cat > Formula/aktags.rb <<EOF
+          BINARY_URL="https://github.com/Akinus21/Aktags/releases/download/${TAG_NAME}/aktags"
+          mkdir -p Formula
+          cat > Formula/aktags.rb <<'RUBY'
           class Aktags < Formula
-            desc "AI‑driven tagging desktop application"
-            homepage "https://github.com/${{ github.repository }}"
-            url "https://github.com/${{ github.repository }}/releases/download/${TAG}/aktags"
-            sha256 "${SHA256}"
-            license "MIT"
+            desc "AI-powered tag-based file browser with background daemon"
+            homepage "https://github.com/Akinus21/Aktags"
+            version "VERSION_PLACEHOLDER"
+
+            on_linux do
+              url "URL_PLACEHOLDER"
+              sha256 "SHA256_PLACEHOLDER"
+            end
+
             def install
               bin.install "aktags"
             end
+
+            def post_install
+              (var/"aktags").mkpath
+            end
+
+            service do
+              run [opt_bin/"aktags", "--daemon"]
+              keep_alive true
+              log_path var/"log/aktags.log"
+              error_log_path var/"log/aktags.log"
+            end
+
+            test do
+              system "#{bin}/aktags", "--help"
+            end
           end
-          EOF
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          RUBY
+          sed -i "s/VERSION_PLACEHOLDER/${TAG_NAME#v}/g" Formula/aktags.rb
+          sed -i "s|URL_PLACEHOLDER|${BINARY_URL}|g" Formula/aktags.rb
+          sed -i "s/SHA256_PLACEHOLDER/${SHA256}/g" Formula/aktags.rb
+          git config user.email "ci@akinus21.com"
+          git config user.name "AKTags CI"
           git add Formula/aktags.rb
-          git commit -m "aktags ${TAG}"
-          git push origin main
+          git diff --cached --quiet || git commit -m "chore: update aktags to ${TAG_NAME}"
+          git push https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git main
         shell: bash
 
       - name: Notify webhook on success
