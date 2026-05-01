@@ -83,7 +83,8 @@ jobs:
       - name: Bump version in Cargo.toml
         if: ${{ steps.version.outputs.new_tag != '' }}
         run: |
-          NEW_VERSION=${{ steps.version.outputs.new_tag#v }}
+          NEW_VERSION="${{ steps.version.outputs.new_tag }}"
+          NEW_VERSION="${NEW_VERSION#v}"
           sed -i -E "s/^version = \".*\"$/version = \"${NEW_VERSION}\"/" Cargo.toml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -159,7 +160,8 @@ jobs:
             end
           end
           RUBY
-          sed -i "s/VERSION_PLACEHOLDER/${TAG_NAME#v}/g" Formula/aktags.rb
+          TAG_NAME_V="${TAG_NAME#v}"
+          sed -i "s/VERSION_PLACEHOLDER/${TAG_NAME_V}/g" Formula/aktags.rb
           sed -i "s|URL_PLACEHOLDER|${BINARY_URL}|g" Formula/aktags.rb
           sed -i "s/SHA256_PLACEHOLDER/${SHA256}/g" Formula/aktags.rb
           git config user.email "ci@akinus21.com"
