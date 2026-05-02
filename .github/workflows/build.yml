@@ -118,14 +118,20 @@ jobs:
         shell: bash
 
       - name: Update Homebrew tap
-        if: ${{ steps.version.outputs.new_tag != '' }}
+        if: success() && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           TAG_NAME: ${{ steps.version.outputs.new_tag }}
           SHA256: ${{ steps.release.outputs.sha256 }}
         run: |
+          set -euo pipefail
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "ERROR: GH_TOKEN secret is not set. Homebrew tap cannot be updated."
+            echo "Set a GitHub PAT with \`repo\` scope as the GH_TOKEN repository secret."
+            exit 1
+          fi
           REPO="Akinus21/homebrew-tap"
-          git clone https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git tap-repo
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" tap-repo
           cd tap-repo
           BINARY_URL="https://github.com/Akinus21/Aktags/releases/download/${TAG_NAME}/aktags"
           mkdir -p Formula
@@ -169,7 +175,7 @@ jobs:
           git add Formula/aktags.rb
           git diff --cached --quiet || git commit -m "chore: update aktags to ${TAG_NAME}"
           DEFAULT_BRANCH=$(git branch --show-current)
-          git push https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git $DEFAULT_BRANCH
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" "$DEFAULT_BRANCH"
         shell: bash
 
       - name: Notify webhook on success
