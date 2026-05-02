@@ -176,6 +176,9 @@ impl Daemon {
                 flag_clone.store(true, std::sync::atomic::Ordering::Relaxed);
             });
 
+            let mut last_sync = std::time::Instant::now();
+            let mut last_reap = std::time::Instant::now();
+
             loop {
                 if shutdown_flag.load(std::sync::atomic::Ordering::Relaxed) {
                     info!("Daemon shutting down");
@@ -188,6 +191,9 @@ impl Daemon {
                         match event {
                             FileEvent::Process(path) => {
                                 process_file(&path, &cfg, &pool, &client, &stats).await;
+                                if cfg.cloud.enabled && cfg.cloud.sync_on_file_change {
+                                    trigger_sync(&cfg.cloud, &pool).await;
+                                }
                             }
                             FileEvent::Delete(path) => {
                                 let _ = db::remove_file(&pool, path.to_str().unwrap_or(""));
@@ -215,6 +221,30 @@ impl Daemon {
                         }
                     }
                     Err(crossbeam_channel::RecvTimeoutError::Timeout) => {
+                        // Periodic tasks
+                        let now = std::time::Instant::now();
+
+                        // Sync cycle
+                        let cfg = config.lock().unwrap().clone();
+                        if cfg.cloud.enabled {
+                            let interval = Duration::from_secs(cfg.cloud.sync_interval_secs);
+                            if now.duration_since(last_sync) >= interval {
+                                trigger_sync(&cfg.cloud, &pool).await;
+                                last_sync = now;
+                            }
+                        }
+
+                        // Graveyard reaper (every 6 hours)
+                        if now.duration_since(last_reap) >= Duration::from_secs(6 * 3600) {
+                            if let Err(e) = crate::graveyard::reap() {
+                                warn!("Graveyard reaper failed: {e}");
+                            }
+                            if let Err(e) = crate::graveyard::enforce_size_cap(cfg.graveyard.max_size_mb) {
+                                warn!("Graveyard size cap enforcement failed: {e}");
+                            }
+                            last_reap = now;
+                        }
+
                         tokio::task::yield_now().await;
                     }
                     Err(_) => break,
@@ -332,5 +362,20 @@ async fn process_file(
     }
 
     // Update queue size
-    stats.lock().unwrap().queue_size = 0; // approximate — crossbeam doesn't expose len easily
+    stats.lock().unwrap().queue_size = 0;
+}
+
+async fn trigger_sync(cloud: &crate::config::CloudConfig, pool: &DbPool) {
+    match crate::sync::identity::load_identity() {
+        Ok(identity) => {
+            if let Err(e) = crate::sync::run_sync(cloud, pool, &identity).await {
+                warn!("Background sync failed: {e}");
+            } else {
+                info!("Background sync completed");
+            }
+        }
+        Err(e) => {
+            warn!("Could not load identity for sync: {e}");
+        }
+    }
 }

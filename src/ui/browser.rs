@@ -53,17 +53,32 @@ fn view_header(app: &AkTags) -> Element<'_, Message> {
         String::new()
     };
 
-    let status_label_owned = status_label;
-    let queue_badge_owned = queue_badge;
+    let sync_badge = match app.sync_status {
+        super::app::SyncStatus::Idle => String::new(),
+        super::app::SyncStatus::Connecting => "● connecting".to_string(),
+        super::app::SyncStatus::Synced => "● synced".to_string(),
+        super::app::SyncStatus::Syncing => "● syncing".to_string(),
+        super::app::SyncStatus::Error(ref e) => format!("● error: {}", e),
+    };
+
+    let sync_color = match app.sync_status {
+        super::app::SyncStatus::Idle => theme::default_colors(app.theme_type).text_dim(),
+        super::app::SyncStatus::Connecting => theme::default_colors(app.theme_type).text_dim(),
+        super::app::SyncStatus::Synced => theme::default_colors(app.theme_type).green(),
+        super::app::SyncStatus::Syncing => theme::default_colors(app.theme_type).accent(),
+        super::app::SyncStatus::Error(_) => theme::default_colors(app.theme_type).red(),
+    };
 
     row![
         text("AkTags").size(20).color(theme::default_colors(app.theme_type).accent()),
         Space::with_width(12.0),
-        text("[*]").size(12).color(status_color),
+        text("●").size(10).color(status_color),
         Space::with_width(8.0),
-        text(status_label_owned).size(12).color(theme::default_colors(app.theme_type).text_dim()),
+        text(status_label.clone()).size(12).color(theme::default_colors(app.theme_type).text_dim()),
         Space::with_width(8.0),
-        text(queue_badge_owned).size(11).color(theme::default_colors(app.theme_type).yellow()),
+        text(queue_badge.clone()).size(11).color(theme::default_colors(app.theme_type).yellow()),
+        Space::with_width(8.0),
+        text(sync_badge).size(11).color(sync_color),
         Space::with_width(Length::Fill),
         nav_button("Re-tag All", Message::RetagAll),
         Space::with_width(8.0),
@@ -212,12 +227,12 @@ fn category_item(
 
 fn category_icon(cat: &str) -> &'static str {
     match cat {
-        "documents" => "[doc]",
-        "images"    => "[img]",
-        "code"      => "[code]",
-        "audio"     => "[audio]",
-        "video"     => "[video]",
-        _           => "[file]",
+        "documents" => "📄",
+        "images"    => "🖼",
+        "code"      => "⚙",
+        "audio"     => "🎵",
+        "video"     => "🎬",
+        _           => "📁",
     }
 }
 
@@ -317,8 +332,20 @@ fn view_grid(app: &AkTags) -> Element<'_, Message> {
         .map(|f| file_card(f, app.theme_type, app.selected_file.as_ref().map(|s| s.id) == Some(f.id)))
         .collect();
 
+    // Build rows of 4 cards each for a proper grid
+    let mut rows: Vec<Element<'_, Message>> = Vec::new();
+    for chunk in cards.chunks(4) {
+        let row_items: Vec<Element<'_, Message>> = chunk.to_vec();
+        rows.push(
+            Row::with_children(row_items)
+                .spacing(SPACING)
+                .width(Length::Fill)
+                .into()
+        );
+    }
+
     scrollable(
-        Column::with_children(cards)
+        Column::with_children(rows)
             .spacing(SPACING)
             .padding(PADDING)
     )
@@ -540,15 +567,15 @@ fn empty_state<'a>(title: &'a str, subtitle: &'a str, theme_type: theme::ThemeTy
 
 fn file_type_icon(ext: &str) -> &'static str {
     match ext {
-        ".pdf"  => "[PDF]", ".doc" | ".docx" => "[DOC]",
-        ".txt" | ".md" => "[TXT]", ".xls" | ".xlsx" => "[XLS]",
-        ".ppt" | ".pptx" => "[PPT]", ".py" => "[PY]",
-        ".js" | ".ts" => "[JS]", ".sh" | ".bash" => "[SH]",
-        ".json" | ".yaml" | ".yml" => "[JSON]",
-        ".jpg" | ".jpeg" | ".png" | ".gif" | ".webp" => "[IMG]",
-        ".mp3" | ".wav" | ".flac" => "[AUDIO]",
-        ".mp4" | ".mkv" | ".avi" => "[VIDEO]",
-        _ => "[FILE]",
+        ".pdf"  => "📄", ".doc" | ".docx" => "📝",
+        ".txt" | ".md" => "📃", ".xls" | ".xlsx" => "📊",
+        ".ppt" | ".pptx" => "📽", ".py" => "🐍",
+        ".js" | ".ts" => "📜", ".sh" | ".bash" => "⌨",
+        ".json" | ".yaml" | ".yml" => "⚙",
+        ".jpg" | ".jpeg" | ".png" | ".gif" | ".webp" => "🖼",
+        ".mp3" | ".wav" | ".flac" => "🎵",
+        ".mp4" | ".mkv" | ".avi" => "🎬",
+        _ => "📁",
     }
 }
 
