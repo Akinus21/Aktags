@@ -328,8 +328,9 @@ fn view_grid(app: &AkTags) -> Element<'_, Message> {
         return empty_state("No files found", "Try adjusting your search or filters.", app.theme_type);
     }
 
+    let selected_id = app.selected_file.as_ref().map(|s| s.id);
     let cards: Vec<Element<'_, Message>> = app.files.iter()
-        .map(|f| file_card(f, app.theme_type, app.selected_file.as_ref().map(|s| s.id) == Some(f.id)))
+        .map(|f| file_card(f, app.theme_type, selected_id == Some(f.id)))
         .collect();
 
     // Build rows of 4 cards each for a proper grid
