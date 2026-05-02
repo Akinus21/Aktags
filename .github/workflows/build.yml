@@ -168,7 +168,8 @@ jobs:
           git config user.name "AKTags CI"
           git add Formula/aktags.rb
           git diff --cached --quiet || git commit -m "chore: update aktags to ${TAG_NAME}"
-          git push https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git main
+          DEFAULT_BRANCH=$(git branch --show-current)
+          git push https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git $DEFAULT_BRANCH
         shell: bash
 
       - name: Notify webhook on success
