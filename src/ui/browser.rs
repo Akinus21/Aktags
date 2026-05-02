@@ -53,15 +53,15 @@ fn view_header(app: &AkTags) -> Element<'_, Message> {
         String::new()
     };
 
-    let sync_badge = match app.sync_status {
+    let sync_badge = match &app.sync_status {
         super::app::SyncStatus::Idle => String::new(),
         super::app::SyncStatus::Connecting => "● connecting".to_string(),
         super::app::SyncStatus::Synced => "● synced".to_string(),
         super::app::SyncStatus::Syncing => "● syncing".to_string(),
-        super::app::SyncStatus::Error(ref e) => format!("● error: {}", e),
+        super::app::SyncStatus::Error(e) => format!("● error: {}", e),
     };
 
-    let sync_color = match app.sync_status {
+    let sync_color = match &app.sync_status {
         super::app::SyncStatus::Idle => theme::default_colors(app.theme_type).text_dim(),
         super::app::SyncStatus::Connecting => theme::default_colors(app.theme_type).text_dim(),
         super::app::SyncStatus::Synced => theme::default_colors(app.theme_type).green(),
@@ -398,8 +398,9 @@ fn view_list(app: &AkTags) -> Element<'_, Message> {
         return empty_state("No files found", "Try adjusting your search or filters.", app.theme_type);
     }
 
+    let selected_id = app.selected_file.as_ref().map(|s| s.id);
     let rows: Vec<Element<'_, Message>> = app.files.iter()
-        .map(|f| file_row(f, app.theme_type, app.selected_file.as_ref().map(|s| s.id) == Some(f.id)))
+        .map(|f| file_row(f, app.theme_type, selected_id == Some(f.id)))
         .collect();
 
     Column::with_children(rows)
