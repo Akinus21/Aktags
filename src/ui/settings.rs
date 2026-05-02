@@ -205,13 +205,12 @@ pub fn view(app: &AkTags) -> Element<'_, Message> {
                 SyncStatus::Syncing => ("Syncing...".to_string(), colors.accent()),
                 SyncStatus::Error(e) => (format!("Error: {}", e), colors.red()),
             };
-            row![
+            Element::<'_, Message>::from(row![
                 text("Status").size(12).color(colors.text_dim()),
                 Space::with_width(Length::Fill),
                 text(status_label).size(12).color(status_color),
             ]
-            .align_y(Alignment::Center)
-            .into()
+            .align_y(Alignment::Center))
         },
 
         Space::with_height(8.0),
