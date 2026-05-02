@@ -329,14 +329,12 @@ fn view_grid(app: &AkTags) -> Element<'_, Message> {
     }
 
     let selected_id = app.selected_file.as_ref().map(|s| s.id);
-    let cards: Vec<Element<'_, Message>> = app.files.iter()
-        .map(|f| file_card(f, app.theme_type, selected_id == Some(f.id)))
-        .collect();
-
-    // Build rows of 4 cards each for a proper grid
+    let files = &app.files;
     let mut rows: Vec<Element<'_, Message>> = Vec::new();
-    for chunk in cards.chunks(4) {
-        let row_items: Vec<Element<'_, Message>> = chunk.to_vec();
+    for chunk in files.chunks(4) {
+        let row_items: Vec<Element<'_, Message>> = chunk.iter()
+            .map(|f| file_card(f, app.theme_type, selected_id == Some(f.id)))
+            .collect();
         rows.push(
             Row::with_children(row_items)
                 .spacing(SPACING)
