@@ -8,15 +8,28 @@ use super::theme;
 
 const CATEGORIES: &[&str] = &["work", "education", "technical", "personal", "military", "misc"];
 
+// ── Reusable button helpers ───────────────────────────────────────────────────
+
+fn btn_plain<'a>(label: &'a str) -> button::Button<'a, Message> {
+    button(text(label).size(12)).padding([5, 10])
+}
+
+fn btn_accent<'a>(label: &'a str) -> button::Button<'a, Message> {
+    button(text(label).size(12)).padding([5, 10])
+}
+
+fn btn_tag<'a>(label: &'a str) -> button::Button<'a, Message> {
+    button(text(label).size(11)).padding([3, 8])
+}
+
 // ── Pending tags panel ────────────────────────────────────────────────────────
 
 pub fn view_pending(app: &AkTags) -> Element<'_, Message> {
     let colors = theme::default_colors(app.theme_type);
 
     let header = row![
-        button(text("<- Back").size(13))
-            .on_press(Message::SwitchPanel(Panel::Browser))
-            .padding([6, 14]),
+        btn_plain("<- Back")
+            .on_press(Message::SwitchPanel(Panel::Browser)),
         Space::with_width(16.0),
         column![
             text("Pending Tag Approvals").size(16),
@@ -25,13 +38,9 @@ pub fn view_pending(app: &AkTags) -> Element<'_, Message> {
                 .color(colors.text_dim()),
         ],
         Space::with_width(Length::Fill),
-        button(text("Approve All").size(13))
-            .on_press(Message::ApproveAll)
-            .padding([6, 14]),
+        btn_accent("Approve All").on_press(Message::ApproveAll),
         Space::with_width(8.0),
-        button(text("Reject All").size(13))
-            .on_press(Message::RejectAll)
-            .padding([6, 14]),
+        btn_plain("Reject All").on_press(Message::RejectAll),
     ]
     .align_y(Alignment::Center)
     .padding([16, 20]);
@@ -90,57 +99,69 @@ fn pending_card<'a>(
         .collect::<Vec<_>>()
         .join(", ");
 
+    // Category approval buttons — compact row
     let cat_buttons: Vec<Element<'_, Message>> = CATEGORIES.iter()
         .map(|&cat| {
-            button(text(cat).size(11))
+            btn_tag(cat)
                 .on_press(Message::PendingApprove(tag.to_string(), cat.to_string()))
-                .padding([3, 8])
                 .into()
         })
         .collect();
 
-    column![
-        row![
-            text(tag).size(16).color(colors.orange()),
-            Space::with_width(12.0),
-            text(format!("{} file{}", meta.file_count, if meta.file_count != 1 { "s" } else { "" }))
-                .size(12)
+    container(
+        column![
+            row![
+                text(tag).size(16).color(colors.orange()),
+                Space::with_width(12.0),
+                text(format!("{} file{}", meta.file_count, if meta.file_count != 1 { "s" } else { "" }))
+                    .size(12)
+                    .color(colors.text_dim()),
+                Space::with_width(Length::Fill),
+                button(text("Reject").size(12))
+                    .on_press(Message::PendingReject(tag.to_string()))
+                    .padding([4, 10]),
+            ]
+            .align_y(Alignment::Center),
+
+            text(files_preview).size(11)
                 .color(colors.text_dim()),
-            Space::with_width(Length::Fill),
-            button(text("Reject").size(12))
-                .on_press(Message::PendingReject(tag.to_string()))
-                .padding([4, 10]),
+
+            Space::with_height(8.0),
+
+            text("Approve as:").size(11)
+                .color(colors.text_dim()),
+            Row::with_children(cat_buttons).spacing(6.0),
+
+            Space::with_height(8.0),
+
+            row![
+                text_input("Merge into existing tag...", merge_input)
+                    .on_input(|v| Message::PendingMergeInputChanged(tag.to_string(), v))
+                    .padding([5, 10])
+                    .width(220.0),
+                Space::with_width(8.0),
+                button(text("Merge as Alias").size(12))
+                    .on_press(Message::PendingMerge(
+                        tag.to_string(),
+                        merge_input.to_string(),
+                    ))
+                    .padding([5, 10]),
+            ]
+            .align_y(Alignment::Center),
         ]
-        .align_y(Alignment::Center),
-
-        text(files_preview).size(11)
-            .color(colors.text_dim()),
-
-        Space::with_height(8.0),
-
-        text("Approve as:").size(11)
-            .color(colors.text_dim()),
-        Row::with_children(cat_buttons).spacing(6.0),
-
-        Space::with_height(8.0),
-
-        row![
-            text_input("Merge into existing tag...", merge_input)
-                .on_input(|v| Message::PendingMergeInputChanged(tag.to_string(), v))
-                .padding([5, 10])
-                .width(220.0),
-            Space::with_width(8.0),
-            button(text("Merge as Alias").size(12))
-                .on_press(Message::PendingMerge(
-                    tag.to_string(),
-                    merge_input.to_string(),
-                ))
-                .padding([5, 10]),
-        ]
-        .align_y(Alignment::Center),
-    ]
-    .spacing(6)
-    .padding(16)
+        .spacing(6)
+        .padding(16)
+        .width(Length::Fill),
+    )
+    .style(move |_| container::Style {
+        background: Some(colors.surface().into()),
+        border: iced::Border {
+            color: colors.border(),
+            width: 1.0,
+            radius: 6.0.into(),
+        },
+        ..Default::default()
+    })
     .width(Length::Fill)
     .into()
 }
@@ -150,43 +171,60 @@ fn pending_card<'a>(
 pub fn view_taxonomy(app: &AkTags) -> Element<'_, Message> {
     let colors = theme::default_colors(app.theme_type);
 
-    let header = row![
-        button(text("<- Back").size(13))
-            .on_press(Message::SwitchPanel(Panel::Browser))
-            .padding([6, 14]),
+    // Top row: back + title
+    let top_row = row![
+        btn_plain("<- Back")
+            .on_press(Message::SwitchPanel(Panel::Browser)),
         Space::with_width(16.0),
         text("Approved Tag Library").size(16),
         Space::with_width(Length::Fill),
+    ]
+    .align_y(Alignment::Center)
+    .padding([16, 20, 8, 20]);
+
+    // Second row: new tag inputs + category selector + add button
+    // Category selector as compact pill buttons
+    let cat_buttons: Vec<Element<'_, Message>> = CATEGORIES.iter()
+        .map(|&cat| {
+            let is_selected = app.new_tag_category == cat;
+            let bg = if is_selected { colors.accent() } else { colors.surface2() };
+            let fg = if is_selected { colors.bg() } else { colors.text() };
+            button(text(cat).size(11).color(fg))
+                .on_press(Message::NewTagCategoryChanged(cat.to_string()))
+                .padding([4, 10])
+                .style(move |_t, _s| button::Style {
+                    background: Some(bg.into()),
+                    text_color: fg,
+                    border: iced::Border {
+                        color: if is_selected { colors.accent() } else { colors.border() },
+                        width: 1.0,
+                        radius: 4.0.into(),
+                    },
+                    ..Default::default()
+                })
+                .into()
+        })
+        .collect();
+
+    let add_row = row![
         text_input("tag name", &app.new_tag_name)
             .on_input(Message::NewTagNameChanged)
             .padding([6, 10])
-            .width(130.0),
+            .width(140.0),
         Space::with_width(8.0),
-        {
-            let cat_buttons: Vec<Element<'_, Message>> = CATEGORIES.iter()
-                .map(|&cat| {
-                    button(text(cat).size(11))
-                        .on_press(Message::NewTagCategoryChanged(cat.to_string()))
-                        .padding([4, 8])
-                        .style(|_t, _s| button::Style::default())
-                        .into()
-                })
-                .collect();
-            Element::from(Row::with_children(cat_buttons).spacing(4))
-        },
+        Row::with_children(cat_buttons).spacing(4.0),
         Space::with_width(8.0),
         text_input("aliases (comma separated)", &app.new_tag_aliases)
             .on_input(Message::NewTagAliasesChanged)
             .padding([6, 10])
-            .width(200.0),
+            .width(180.0),
         Space::with_width(8.0),
-        button(text("+ Add Tag").size(13))
-            .on_press(Message::AddNewTag)
-            .padding([6, 14]),
+        btn_accent("+ Add Tag").on_press(Message::AddNewTag),
     ]
     .align_y(Alignment::Center)
-    .padding([16, 20]);
+    .padding([8, 20, 16, 20]);
 
+    // Build taxonomy sections with wrapped tag chips
     let mut by_category: std::collections::HashMap<String, Vec<&(String, crate::taxonomy::TagMeta)>> =
         std::collections::HashMap::new();
     for item in &app.taxonomy {
@@ -199,26 +237,49 @@ pub fn view_taxonomy(app: &AkTags) -> Element<'_, Message> {
 
     for cat in cats {
         let tags = &by_category[cat];
-        let tag_chips: Vec<Element<'_, Message>> = tags.iter()
-            .map(|(name, meta)| taxonomy_tag_chip(name.clone(), meta, &colors))
+        let chips: Vec<Element<'_, Message>> = tags.iter()
+            .map(|(name, meta)| taxonomy_tag_chip(name, meta, &colors))
             .collect();
 
+        // Wrap chips into rows of ~6 items each to prevent overflow
+        let wrapped = wrap_elements(chips, 6, 8.0);
+
         sections.push(
-            column![
-                text(format!("{cat} ({})", tags.len()))
-                    .size(11)
-                    .color(colors.text_dim()),
-                Space::with_height(8.0),
-                Row::with_children(tag_chips).spacing(8.0),
-                Space::with_height(16.0),
-            ]
-            .spacing(0)
+            container(
+                column![
+                    row![
+                        text(cat.as_str()).size(13).color(colors.accent2()),
+                        Space::with_width(8.0),
+                        text(format!("{}", tags.len()))
+                            .size(11)
+                            .color(colors.text_dim()),
+                    ]
+                    .align_y(Alignment::Center),
+                    Space::with_height(8.0),
+                    wrapped,
+                ]
+                .spacing(0)
+                .width(Length::Fill)
+                .padding(12),
+            )
+            .style(move |_| container::Style {
+                background: Some(colors.surface().into()),
+                border: iced::Border {
+                    color: colors.border(),
+                    width: 1.0,
+                    radius: 6.0.into(),
+                },
+                ..Default::default()
+            })
+            .width(Length::Fill)
             .into()
         );
+        sections.push(Space::with_height(12.0).into());
     }
 
     column![
-        header,
+        top_row,
+        add_row,
         scrollable(
             Column::with_children(sections)
                 .padding([0, 20])
@@ -231,34 +292,72 @@ pub fn view_taxonomy(app: &AkTags) -> Element<'_, Message> {
     .into()
 }
 
+/// Wrap elements into rows of `per_row` items.
+fn wrap_elements(
+    items: Vec<Element<'_, Message>>,
+    per_row: usize,
+    spacing: f32,
+) -> Element<'_, Message> {
+    if items.is_empty() {
+        return Space::with_height(0.0).into();
+    }
+    let rows: Vec<Element<'_, Message>> = items
+        .chunks(per_row)
+        .map(|chunk| {
+            Row::with_children(chunk.iter().cloned().collect::<Vec<_>>())
+                .spacing(spacing)
+                .into()
+        })
+        .collect();
+    Column::with_children(rows)
+        .spacing(spacing)
+        .width(Length::Fill)
+        .into()
+}
+
 fn taxonomy_tag_chip(
-    name: String,
+    name: &str,
     meta: &crate::taxonomy::TagMeta,
     colors: &theme::ThemeColors,
-) -> Element<'static, Message> {
+) -> Element<'_, Message> {
     let aliases_text = if meta.aliases.is_empty() {
         String::new()
     } else {
-        format!(" -> {}", meta.aliases.join(", "))
+        format!(" → {}", meta.aliases.join(", "))
     };
-    let name_for_text = name.clone();
-    let aliases_for_text = aliases_text.clone();
     let has_aliases = !aliases_text.is_empty();
+    let name_owned = name.to_string();
 
-    row![
-        text(name_for_text).size(13),
-        if has_aliases {
-            Element::from(text(aliases_for_text).size(11).color(colors.text_dim()))
-        } else {
-            Element::from(Space::with_width(0.0))
+    container(
+        row![
+            text(name).size(12).color(colors.text()),
+            if has_aliases {
+                Element::from(text(aliases_text).size(10).color(colors.text_dim()))
+            } else {
+                Element::from(Space::with_width(0.0))
+            },
+            Space::with_width(4.0),
+            button(text("×").size(12).color(colors.red()))
+                .on_press(Message::RemoveTaxonomyTag(name_owned))
+                .padding([1, 4])
+                .style(|_t, _s| button::Style {
+                    background: None,
+                    text_color: colors.red(),
+                    ..Default::default()
+                }),
+        ]
+        .align_y(Alignment::Center)
+        .spacing(2),
+    )
+    .style(move |_| container::Style {
+        background: Some(colors.tag_bg().into()),
+        border: iced::Border {
+            color: colors.border(),
+            width: 1.0,
+            radius: 4.0.into(),
         },
-        Space::with_width(6.0),
-        button(text("X").size(12))
-            .on_press(Message::RemoveTaxonomyTag(name))
-            .padding([2, 5])
-            .style(|_t, _s| button::Style::default()),
-    ]
-    .align_y(Alignment::Center)
-    .spacing(2)
+        ..Default::default()
+    })
+    .padding([4, 8])
     .into()
 }
