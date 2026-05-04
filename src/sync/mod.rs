@@ -86,7 +86,12 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
     // 5. TRANSFER — UPLOADS
     for entry in uploads {
         let local_path = shellexpand::tilde(&entry.path).to_string();
-        match client::upload_file(&http, base, &entry.path, &local_path).await {
+        // Strip to just filename for server upload path
+        let path = std::path::Path::new(&entry.path);
+        let remote_name = path.file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or(&entry.path);
+        match client::upload_file(&http, base, remote_name, &local_path).await {
             Ok(()) => {
                 info!("[sync] uploaded {}", entry.path);
             }
@@ -98,8 +103,11 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
 
     // 5. TRANSFER — DOWNLOADS
     for entry in downloads {
+        // Use server's path as-is (server stores relative paths in manifest)
+        let remote_path = entry.path.as_str();
+        // Map to local watch directory for download destination
         let local_path = shellexpand::tilde(&entry.path).to_string();
-        match client::download_file(&http, base, &entry.path, &local_path).await {
+        match client::download_file(&http, base, remote_path, &local_path).await {
             Ok(()) => {
                 info!("[sync] downloaded {}", entry.path);
             }
