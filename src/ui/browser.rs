@@ -540,7 +540,7 @@ fn view_list(app: &AkTags) -> Element<'_, Message> {
         header_container,
         Column::with_children(rows)
             .spacing(4)
-            .padding([0i32, 16])
+            .padding([0u16, 16])
             .width(Length::Fill),
     ]
     .width(Length::Fill)
@@ -791,7 +791,7 @@ fn wrap_tag_rows(
     let rows: Vec<Element<'_, Message>> = items
         .chunks(per_row)
         .map(|chunk| {
-            Row::with_children(chunk.iter().map(|e| e.clone()).collect::<Vec<_>>())
+            Row::with_children(chunk.iter().map(|e| (*e).clone()).collect::<Vec<_>>())
                 .spacing(spacing)
                 .into()
         })

@@ -304,7 +304,7 @@ fn wrap_elements(
     let rows: Vec<Element<'_, Message>> = items
         .chunks(per_row)
         .map(|chunk| {
-            Row::with_children(chunk.iter().map(|e| e.clone()).collect::<Vec<_>>())
+            Row::with_children(chunk.iter().map(|e| (*e).clone()).collect::<Vec<_>>())
                 .spacing(spacing)
                 .into()
         })
