@@ -131,8 +131,20 @@ pub async fn tag_file(
         return Err(anyhow!("Ollama HTTP {status}: {body}"));
     }
 
-    let data: OllamaResponse = resp.json().await?;
+    let body_text = resp.text().await
+        .map_err(|e| anyhow!("Failed to read Ollama response body: {e}"))?;
+
+    if body_text.trim().is_empty() {
+        return Err(anyhow!("Ollama returned empty response body for '{}'", filename));
+    }
+
+    let data: OllamaResponse = serde_json::from_str(&body_text)
+        .map_err(|e| anyhow!("Ollama returned invalid JSON ({e}): {body_text:.200}"))?;
     let mut raw = data.message.content.trim().to_string();
+
+    if raw.is_empty() {
+        return Err(anyhow!("Ollama returned empty content for '{}' — model may still be loading or the prompt was rejected.", filename));
+    }
 
     // Strip markdown code fences
     if raw.starts_with("```") {
