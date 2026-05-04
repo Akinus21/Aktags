@@ -1,16 +1,21 @@
 use anyhow::{anyhow, Context, Result};
-use reqwest::header::{AUTHORIZATION, HeaderMap};
+use reqwest::header::{AUTHORIZATION, HeaderMap, HeaderName};
+use std::str::FromStr;
 use serde::{Deserialize, Serialize};
 
 use crate::db::DbPool;
 
-/// Generic reqwest client with Bearer token.
+/// Generic reqwest client with Bearer token + X-Api-Key fallback.
 pub fn new_client(api_key: &str) -> Result<reqwest::Client> {
     let mut headers = HeaderMap::new();
     if !api_key.is_empty() {
         headers.insert(
             AUTHORIZATION,
             format!("Bearer {}", api_key).parse().context("Parsing auth header")?,
+        );
+        headers.insert(
+            HeaderName::from_str("X-Api-Key").unwrap(),
+            api_key.parse().context("Parsing X-Api-Key header")?,
         );
     }
     reqwest::Client::builder()
