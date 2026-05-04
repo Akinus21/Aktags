@@ -241,29 +241,31 @@ fn view_sidebar(app: &AkTags) -> Element<'_, Message> {
         }
     }
 
-    let tag_items: Vec<Element<'_, Message>> = app.all_tags.iter()
+    // Build tag chips with wrapping (keep each tag intact, wrap to next row)
+    let tag_chips: Vec<Element<'_, Message>> = app.all_tags.iter()
         .take(100)
         .map(|(tag, count)| {
-            let label = format!("{tag} {count}");
-            button(text(label).size(12).color(colors.text()))
+            let label = format!("{} {}", tag, count);
+            button(text(label).size(11).color(colors.text()))
                 .on_press(Message::TagToggled(tag.clone()))
-                .padding([3, 10])
+                .padding([3, 8])
                 .style(btn_tag(colors))
                 .into()
         })
         .collect();
+
+    // Wrap tags into rows that fit sidebar width (approx 5-6 per row)
+    let wrapped_tags = wrap_tag_rows(tag_chips, 5, 4.0);
 
     let sidebar_content = column![
         text("Categories").size(11).color(colors.text_dim()),
         Space::with_height(8.0),
         Column::with_children(cat_items).spacing(2),
         horizontal_rule(1),
-        Space::with_height(8.0),
+        Space::with_height(12.0),
         text("Tags").size(11).color(colors.text_dim()),
         Space::with_height(8.0),
-        scrollable(
-            Row::with_children(tag_items).spacing(4)
-        ).height(Length::Fill),
+        scrollable(wrapped_tags).height(Length::Fill),
     ]
     .spacing(4)
     .padding(14)
@@ -495,15 +497,88 @@ fn view_list(app: &AkTags) -> Element<'_, Message> {
         return empty_state("No files found", "Try adjusting your search or filters.", app.theme_type);
     }
 
+    let colors = theme::default_colors(app.theme_type);
     let selected_id = app.selected_file.as_ref().map(|s| s.id);
+
+    // Sort indicator arrow
+    let arrow = |field: super::app::SortField| {
+        if app.sort_field == field {
+            match app.sort_direction {
+                super::app::SortDirection::Ascending => " ▲",
+                super::app::SortDirection::Descending => " ▼",
+            }
+        } else {
+            ""
+        }.to_string()
+    };
+
+    // Column header row
+    let header = row![
+        text("").size(12).width(30.0), // icon column spacer
+        sort_header("Name", super::app::SortField::Name, colors, &app),
+        Space::with_width(Length::Fill),
+        text("Tags").size(11).color(colors.text_dim()),
+        Space::with_width(12.0),
+        sort_header("Category", super::app::SortField::Category, colors, &app),
+        Space::with_width(12.0),
+        sort_header("Size", super::app::SortField::Size, colors, &app),
+    ]
+    .spacing(8)
+    .align_y(Alignment::Center)
+    .padding([6, 12])
+    .width(Length::Fill);
+
+    let header_container = container(header)
+        .width(Length::Fill)
+        .style(bg_style(colors.surface2()));
+
     let rows: Vec<Element<'_, Message>> = app.files.iter()
         .map(|f| file_row(f, app.theme_type, selected_id == Some(f.id)))
         .collect();
 
-    Column::with_children(rows)
-        .spacing(4)
-        .padding(PADDING)
-        .width(Length::Fill)
+    column![
+        header_container,
+        Column::with_children(rows)
+            .spacing(4)
+            .padding([0, PADDING])
+            .width(Length::Fill),
+    ]
+    .width(Length::Fill)
+    .into()
+}
+
+fn sort_header(
+    label: &str,
+    field: super::app::SortField,
+    colors: ThemeColors,
+    app: &AkTags,
+) -> Element<'_, Message> {
+    let is_active = app.sort_field == field;
+    let arrow = if is_active {
+        match app.sort_direction {
+            super::app::SortDirection::Ascending => " ▲",
+            super::app::SortDirection::Descending => " ▼",
+        }
+    } else {
+        ""
+    };
+    let full_label = format!("{}{}", label, arrow);
+
+    button(text(full_label).size(11).color(if is_active {
+        colors.accent()
+    } else {
+        colors.text_dim()
+    }))
+        .on_press(Message::SortChanged(field))
+        .padding([2, 6])
+        .style(move |_, status| button::Style {
+            background: match status {
+                button::Status::Hovered => Some(colors.surface().into()),
+                _ => None,
+            },
+            text_color: if is_active { colors.accent() } else { colors.text_dim() },
+            ..Default::default()
+        })
         .into()
 }
 
@@ -701,4 +776,28 @@ fn truncate(s: &str, max: usize) -> String {
     } else {
         format!("{}…", s.chars().take(max).collect::<String>())
     }
+}
+
+// ── Tag wrapping helper ───────────────────────────────────────────────────────
+
+fn wrap_tag_rows(
+    items: Vec<Element<'_, Message>>,
+    per_row: usize,
+    spacing: f32,
+) -> Element<'_, Message> {
+    if items.is_empty() {
+        return Space::with_height(0.0).into();
+    }
+    let rows: Vec<Element<'_, Message>> = items
+        .chunks(per_row)
+        .map(|chunk| {
+            Row::with_children(chunk.iter().cloned().collect::<Vec<_>>())
+                .spacing(spacing)
+                .into()
+        })
+        .collect();
+    Column::with_children(rows)
+        .spacing(spacing)
+        .width(Length::Fill)
+        .into()
 }

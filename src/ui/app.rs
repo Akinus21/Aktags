@@ -315,6 +315,50 @@ impl AkTags {
                 };
             }
 
+            Message::SortChanged(field) => {
+                if self.sort_field == field {
+                    // Toggle direction if clicking same field
+                    self.sort_direction = match self.sort_direction {
+                        SortDirection::Ascending => SortDirection::Descending,
+                        SortDirection::Descending => SortDirection::Ascending,
+                    };
+                } else {
+                    self.sort_field = field;
+                    self.sort_direction = SortDirection::Ascending;
+                }
+                // Sort files in place
+                match self.sort_field {
+                    SortField::Name => {
+                        let desc = self.sort_direction == SortDirection::Descending;
+                        self.files.sort_by(|a, b| {
+                            let ord = a.filename.cmp(&b.filename);
+                            if desc { ord.reverse() } else { ord }
+                        });
+                    }
+                    SortField::Category => {
+                        let desc = self.sort_direction == SortDirection::Descending;
+                        self.files.sort_by(|a, b| {
+                            let ord = a.category.cmp(&b.category);
+                            if desc { ord.reverse() } else { ord }
+                        });
+                    }
+                    SortField::Size => {
+                        let desc = self.sort_direction == SortDirection::Descending;
+                        self.files.sort_by(|a, b| {
+                            let ord = a.size_bytes.cmp(&b.size_bytes);
+                            if desc { ord.reverse() } else { ord }
+                        });
+                    }
+                    SortField::Date => {
+                        let desc = self.sort_direction == SortDirection::Descending;
+                        self.files.sort_by(|a, b| {
+                            let ord = a.tagged_at.cmp(&b.tagged_at);
+                            if desc { ord.reverse() } else { ord }
+                        });
+                    }
+                }
+            }
+
             Message::FilesLoaded(files)   => { self.files = files; }
             Message::TagsLoaded(tags)     => { self.all_tags = tags; }
             Message::StatsLoaded(stats)   => { self.stats = Some(stats); }
