@@ -46,6 +46,7 @@ pub enum Message {
     FileDeselected,
     ClearFilters,
     ViewToggled,
+    SortChanged(SortField),
     FilesLoaded(Vec<FileRecord>),
     TagsLoaded(Vec<(String, i64)>),
     StatsLoaded(crate::db::DbStats),
@@ -94,6 +95,20 @@ pub enum Message {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub enum SortField {
+    Name,
+    Category,
+    Size,
+    Date,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum SortDirection {
+    Ascending,
+    Descending,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum ViewMode { Grid, List }
 
 // ── App state ─────────────────────────────────────────────────────────────────
@@ -134,6 +149,8 @@ pub struct AkTags {
     pub theme_type: theme::ThemeType,
     pub update_status: UpdaterStatus,
     pub sync_status: SyncStatus,
+    pub sort_field: SortField,
+    pub sort_direction: SortDirection,
 }
 
 #[derive(Debug, Clone)]
@@ -197,6 +214,8 @@ impl AkTags {
             theme_type,
             update_status: UpdaterStatus::UpToDate,
             sync_status: SyncStatus::Idle,
+            sort_field: SortField::Name,
+            sort_direction: SortDirection::Ascending,
         };
 
         let cmd = if app.panel == Panel::Browser {

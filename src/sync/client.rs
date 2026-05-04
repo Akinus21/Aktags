@@ -28,11 +28,13 @@ pub fn new_client(api_key: &str) -> Result<reqwest::Client> {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FileRecord {
     pub id: i64,
+    #[serde(default)]
     pub filename: String,
     pub path: String,
     pub hash: String,
     pub size: i64,
     pub mtime: i64,
+    #[serde(default)]
     pub tags: Vec<String>,
 }
 

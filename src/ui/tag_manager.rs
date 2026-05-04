@@ -180,7 +180,7 @@ pub fn view_taxonomy(app: &AkTags) -> Element<'_, Message> {
         Space::with_width(Length::Fill),
     ]
     .align_y(Alignment::Center)
-    .padding([16, 20, 8, 20]);
+    .padding([16, 20]);
 
     // Second row: new tag inputs + category selector + add button
     // Category selector as compact pill buttons
@@ -222,7 +222,7 @@ pub fn view_taxonomy(app: &AkTags) -> Element<'_, Message> {
         btn_accent("+ Add Tag").on_press(Message::AddNewTag),
     ]
     .align_y(Alignment::Center)
-    .padding([8, 20, 16, 20]);
+    .padding([12, 20]);
 
     // Build taxonomy sections with wrapped tag chips
     let mut by_category: std::collections::HashMap<String, Vec<&(String, crate::taxonomy::TagMeta)>> =
@@ -315,11 +315,11 @@ fn wrap_elements(
         .into()
 }
 
-fn taxonomy_tag_chip(
-    name: &str,
-    meta: &crate::taxonomy::TagMeta,
-    colors: &theme::ThemeColors,
-) -> Element<'_, Message> {
+fn taxonomy_tag_chip<'a>(
+    name: &'a str,
+    meta: &'a crate::taxonomy::TagMeta,
+    colors: &'a theme::ThemeColors,
+) -> Element<'a, Message> {
     let aliases_text = if meta.aliases.is_empty() {
         String::new()
     } else {
