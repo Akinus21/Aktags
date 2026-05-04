@@ -232,13 +232,13 @@ pub fn view_taxonomy(app: &AkTags) -> Element<'_, Message> {
     }
 
     let mut sections: Vec<Element<'_, Message>> = vec![];
-    let mut cats: Vec<&String> = by_category.keys().collect();
+    let mut cats: Vec<String> = by_category.keys().cloned().collect();
     cats.sort();
 
     for cat in cats {
-        let tags = &by_category[cat];
+        let tags = by_category.get(&cat).unwrap_or(&vec![]);
         let chips: Vec<Element<'_, Message>> = tags.iter()
-            .map(|(name, meta)| taxonomy_tag_chip(name, meta, &colors))
+            .map(|(name, meta)| taxonomy_tag_chip(name, meta, colors))
             .collect();
 
         // Wrap chips into rows of ~6 items each to prevent overflow
@@ -248,7 +248,7 @@ pub fn view_taxonomy(app: &AkTags) -> Element<'_, Message> {
             container(
                 column![
                     row![
-                        text(cat.as_str()).size(13).color(colors.accent2()),
+                        text(cat.clone()).size(13).color(colors.accent2()),
                         Space::with_width(8.0),
                         text(format!("{}", tags.len()))
                             .size(11)
@@ -301,14 +301,26 @@ fn wrap_elements(
     if items.is_empty() {
         return Space::with_height(0.0).into();
     }
-    let rows: Vec<Element<'_, Message>> = items
-        .chunks(per_row)
-        .map(|chunk| {
-            Row::with_children(chunk.iter().map(|e| (*e).clone()).collect::<Vec<_>>())
+    let mut rows: Vec<Element<'_, Message>> = Vec::new();
+    let mut current: Vec<Element<'_, Message>> = Vec::with_capacity(per_row);
+    for item in items {
+        current.push(item);
+        if current.len() == per_row {
+            rows.push(
+                Row::with_children(current)
+                    .spacing(spacing)
+                    .into()
+            );
+            current = Vec::with_capacity(per_row);
+        }
+    }
+    if !current.is_empty() {
+        rows.push(
+            Row::with_children(current)
                 .spacing(spacing)
                 .into()
-        })
-        .collect();
+        );
+    }
     Column::with_children(rows)
         .spacing(spacing)
         .width(Length::Fill)
@@ -318,7 +330,7 @@ fn wrap_elements(
 fn taxonomy_tag_chip<'a>(
     name: &'a str,
     meta: &'a crate::taxonomy::TagMeta,
-    colors: &'a theme::ThemeColors,
+    colors: theme::ThemeColors,
 ) -> Element<'a, Message> {
     let aliases_text = if meta.aliases.is_empty() {
         String::new()

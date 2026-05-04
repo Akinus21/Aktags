@@ -500,8 +500,8 @@ fn view_list(app: &AkTags) -> Element<'_, Message> {
     let colors = theme::default_colors(app.theme_type);
     let selected_id = app.selected_file.as_ref().map(|s| s.id);
 
-    // Sort indicator arrow
-    let arrow = |field: super::app::SortField| {
+    // Sort indicator arrow (unused - each sort_header computes its own arrow)
+    let _arrow = |field: super::app::SortField| {
         if app.sort_field == field {
             match app.sort_direction {
                 super::app::SortDirection::Ascending => " ▲",
@@ -788,14 +788,26 @@ fn wrap_tag_rows(
     if items.is_empty() {
         return Space::with_height(0.0).into();
     }
-    let rows: Vec<Element<'_, Message>> = items
-        .chunks(per_row)
-        .map(|chunk| {
-            Row::with_children(chunk.iter().map(|e| (*e).clone()).collect::<Vec<_>>())
+    let mut rows: Vec<Element<'_, Message>> = Vec::new();
+    let mut current: Vec<Element<'_, Message>> = Vec::with_capacity(per_row);
+    for item in items {
+        current.push(item);
+        if current.len() == per_row {
+            rows.push(
+                Row::with_children(current)
+                    .spacing(spacing)
+                    .into()
+            );
+            current = Vec::with_capacity(per_row);
+        }
+    }
+    if !current.is_empty() {
+        rows.push(
+            Row::with_children(current)
                 .spacing(spacing)
                 .into()
-        })
-        .collect();
+        );
+    }
     Column::with_children(rows)
         .spacing(spacing)
         .width(Length::Fill)
