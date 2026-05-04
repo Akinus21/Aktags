@@ -3,14 +3,84 @@ use iced::{
         button, column, container, horizontal_rule, row, scrollable,
         text, text_input, Column, Row, Space,
     },
-    Alignment, Element, Length,
+    Alignment, Border, Color, Element, Length,
 };
 
 use super::app::{AkTags, Message, Panel, ViewMode};
-use super::theme::{self, PADDING, DETAIL_W, HEADER_H, SIDEBAR_W, SPACING, CARD_W, CARD_H};
+use super::theme::{self, ThemeColors, PADDING, DETAIL_W, HEADER_H, SIDEBAR_W, SPACING, CARD_W, CARD_H};
 use crate::db::FileRecord;
 
+// ── Theme-aware style helpers ─────────────────────────────────────────────────
+
+fn bg_style(bg: Color) -> impl Fn(&iced::Theme) -> container::Style {
+    move |_| container::Style {
+        background: Some(bg.into()),
+        ..Default::default()
+    }
+}
+
+/// Plain button: transparent bg, themed text color
+fn btn_plain(colors: ThemeColors) -> impl Fn(&iced::Theme, button::Status) -> button::Style {
+    move |_, status| button::Style {
+        background: match status {
+            button::Status::Hovered | button::Status::Pressed => {
+                Some(colors.surface2().into())
+            }
+            _ => None,
+        },
+        text_color: colors.text(),
+        border: Border { radius: 6.0.into(), ..Default::default() },
+        ..Default::default()
+    }
+}
+
+/// Accent (primary action) button
+fn btn_accent(colors: ThemeColors) -> impl Fn(&iced::Theme, button::Status) -> button::Style {
+    move |_, status| button::Style {
+        background: Some(match status {
+            button::Status::Hovered | button::Status::Pressed => colors.accent2().into(),
+            _ => colors.accent().into(),
+        }),
+        text_color: Color::WHITE,
+        border: Border { radius: 6.0.into(), ..Default::default() },
+        ..Default::default()
+    }
+}
+
+/// Ghost/dim button (for tab items, category items)
+fn btn_ghost(colors: ThemeColors, active: bool) -> impl Fn(&iced::Theme, button::Status) -> button::Style {
+    move |_, status| button::Style {
+        background: if active {
+            Some(colors.surface2().into())
+        } else {
+            match status {
+                button::Status::Hovered => Some(colors.surface().into()),
+                _ => None,
+            }
+        },
+        text_color: if active { colors.accent() } else { colors.text_dim() },
+        border: Border { radius: 6.0.into(), ..Default::default() },
+        ..Default::default()
+    }
+}
+
+/// Tag chip button
+fn btn_tag(colors: ThemeColors) -> impl Fn(&iced::Theme, button::Status) -> button::Style {
+    move |_, status| button::Style {
+        background: Some(match status {
+            button::Status::Hovered => colors.surface2().into(),
+            _ => colors.tag_bg().into(),
+        }),
+        text_color: colors.text(),
+        border: Border { radius: 4.0.into(), ..Default::default() },
+        ..Default::default()
+    }
+}
+
+// ── Root view ─────────────────────────────────────────────────────────────────
+
 pub fn view(app: &AkTags) -> Element<'_, Message> {
+    let colors = theme::default_colors(app.theme_type);
     let header = view_header(app);
     let nav    = view_nav(app);
     let body   = row![
@@ -20,20 +90,26 @@ pub fn view(app: &AkTags) -> Element<'_, Message> {
     ]
     .height(Length::Fill);
 
-    column![header, nav, body]
-        .width(Length::Fill)
-        .height(Length::Fill)
-        .into()
+    container(
+        column![header, nav, body]
+            .width(Length::Fill)
+            .height(Length::Fill)
+    )
+    .width(Length::Fill)
+    .height(Length::Fill)
+    .style(bg_style(colors.bg()))
+    .into()
 }
 
 // ── Header ────────────────────────────────────────────────────────────────────
 
 fn view_header(app: &AkTags) -> Element<'_, Message> {
+    let colors = theme::default_colors(app.theme_type);
     let ollama_ok = !app.config.ollama_base_url.is_empty();
     let status_color = if app.daemon_stats.running && ollama_ok {
-        theme::default_colors(app.theme_type).green()
+        colors.green()
     } else {
-        theme::default_colors(app.theme_type).red()
+        colors.red()
     };
 
     let status_label = if app.daemon_stats.running {
@@ -62,45 +138,49 @@ fn view_header(app: &AkTags) -> Element<'_, Message> {
     };
 
     let sync_color = match &app.sync_status {
-        super::app::SyncStatus::Idle => theme::default_colors(app.theme_type).text_dim(),
-        super::app::SyncStatus::Connecting => theme::default_colors(app.theme_type).text_dim(),
-        super::app::SyncStatus::Synced => theme::default_colors(app.theme_type).green(),
-        super::app::SyncStatus::Syncing => theme::default_colors(app.theme_type).accent(),
-        super::app::SyncStatus::Error(_) => theme::default_colors(app.theme_type).red(),
+        super::app::SyncStatus::Idle => colors.text_dim(),
+        super::app::SyncStatus::Connecting => colors.text_dim(),
+        super::app::SyncStatus::Synced => colors.green(),
+        super::app::SyncStatus::Syncing => colors.accent(),
+        super::app::SyncStatus::Error(_) => colors.red(),
     };
 
-    row![
-        text("AkTags").size(20).color(theme::default_colors(app.theme_type).accent()),
+    let inner = row![
+        text("AkTags").size(20).color(colors.accent()),
         Space::with_width(12.0),
         text("●").size(10).color(status_color),
         Space::with_width(8.0),
-        text(status_label.clone()).size(12).color(theme::default_colors(app.theme_type).text_dim()),
+        text(status_label).size(12).color(colors.text_dim()),
         Space::with_width(8.0),
-        text(queue_badge.clone()).size(11).color(theme::default_colors(app.theme_type).yellow()),
+        text(queue_badge).size(11).color(colors.yellow()),
         Space::with_width(8.0),
         text(sync_badge).size(11).color(sync_color),
         Space::with_width(Length::Fill),
-        nav_button("Re-tag All", Message::RetagAll),
+        button(text("Re-tag All").size(13).color(colors.text()))
+            .on_press(Message::RetagAll)
+            .padding([6, 14])
+            .style(btn_plain(colors)),
         Space::with_width(8.0),
-        nav_button("Settings", Message::SwitchPanel(Panel::Settings)),
+        button(text("Settings").size(13).color(colors.text()))
+            .on_press(Message::SwitchPanel(Panel::Settings))
+            .padding([6, 14])
+            .style(btn_plain(colors)),
     ]
     .padding([0, 20])
     .height(HEADER_H)
     .align_y(Alignment::Center)
-    .width(Length::Fill)
-    .into()
-}
+    .width(Length::Fill);
 
-fn nav_button(label: &str, msg: Message) -> Element<'_, Message> {
-    button(text(label).size(13))
-        .on_press(msg)
-        .padding([6, 14])
+    container(inner)
+        .width(Length::Fill)
+        .style(bg_style(colors.surface()))
         .into()
 }
 
 // ── Nav tabs ──────────────────────────────────────────────────────────────────
 
 fn view_nav(app: &AkTags) -> Element<'_, Message> {
+    let colors = theme::default_colors(app.theme_type);
     let pending_count = crate::taxonomy::pending_count();
     let pending_label = if pending_count > 0 {
         format!("Pending ({})", pending_count)
@@ -108,16 +188,20 @@ fn view_nav(app: &AkTags) -> Element<'_, Message> {
         String::from("Pending")
     };
 
-    row![
-        tab_button(String::from("Files"),       Panel::Browser,  app),
-        tab_button(pending_label.clone(), Panel::Pending,  app),
+    let inner = row![
+        tab_button(String::from("Files"),        Panel::Browser,  app),
+        tab_button(pending_label,                Panel::Pending,  app),
         tab_button(String::from("Tag Library"),  Panel::Taxonomy, app),
     ]
     .padding([0, 20])
     .height(42.0)
     .align_y(Alignment::End)
-    .spacing(4)
-    .into()
+    .spacing(4);
+
+    container(inner)
+        .width(Length::Fill)
+        .style(bg_style(colors.surface()))
+        .into()
 }
 
 fn tab_button(label: String, panel: Panel, app: &AkTags) -> Element<'_, Message> {
@@ -131,7 +215,7 @@ fn tab_button(label: String, panel: Panel, app: &AkTags) -> Element<'_, Message>
     )
     .on_press(Message::SwitchPanel(panel))
     .padding([8, 18])
-    .style(|_t, _s| button::Style::default())
+    .style(btn_ghost(theme::default_colors(app.theme_type), active))
     .into()
 }
 
@@ -142,7 +226,6 @@ fn view_sidebar(app: &AkTags) -> Element<'_, Message> {
     let stats = app.stats.as_ref();
     let total = stats.map(|s| s.total).unwrap_or(0);
 
-    // Categories
     let mut cat_items: Vec<Element<'_, Message>> = vec![
         category_item(String::from("All Files"), total, None, app.active_category.clone(), app.theme_type),
     ];
@@ -158,21 +241,19 @@ fn view_sidebar(app: &AkTags) -> Element<'_, Message> {
         }
     }
 
-    // Tag cloud
     let tag_items: Vec<Element<'_, Message>> = app.all_tags.iter()
         .take(100)
         .map(|(tag, count)| {
             let label = format!("{tag} {count}");
-            button(text(label).size(12))
+            button(text(label).size(12).color(colors.text()))
                 .on_press(Message::TagToggled(tag.clone()))
                 .padding([3, 10])
-                .style(|_t, _s| button::Style::default())
+                .style(btn_tag(colors))
                 .into()
         })
         .collect();
 
     let sidebar_content = column![
-        // Categories section
         text("Categories").size(11).color(colors.text_dim()),
         Space::with_height(8.0),
         Column::with_children(cat_items).spacing(2),
@@ -181,9 +262,7 @@ fn view_sidebar(app: &AkTags) -> Element<'_, Message> {
         text("Tags").size(11).color(colors.text_dim()),
         Space::with_height(8.0),
         scrollable(
-            Row::with_children(tag_items)
-                .spacing(4)
-                
+            Row::with_children(tag_items).spacing(4)
         ).height(Length::Fill),
     ]
     .spacing(4)
@@ -193,6 +272,7 @@ fn view_sidebar(app: &AkTags) -> Element<'_, Message> {
     container(sidebar_content)
         .width(SIDEBAR_W)
         .height(Length::Fill)
+        .style(bg_style(colors.surface()))
         .into()
 }
 
@@ -213,15 +293,14 @@ fn category_item(
                 colors.text()
             }),
             Space::with_width(Length::Fill),
-            text(count.to_string()).size(11)
-                .color(colors.text_dim()),
+            text(count.to_string()).size(11).color(colors.text_dim()),
         ]
         .align_y(Alignment::Center)
     )
     .on_press(Message::CategorySelected(cat))
     .padding([5, 10])
     .width(Length::Fill)
-    .style(|_t, _s| button::Style::default())
+    .style(btn_ghost(colors, is_active))
     .into()
 }
 
@@ -257,33 +336,38 @@ fn view_main(app: &AkTags) -> Element<'_, Message> {
 }
 
 fn view_toolbar(app: &AkTags) -> Element<'_, Message> {
+    let colors = theme::default_colors(app.theme_type);
     let count_label = format!("{} files", app.files.len());
     let view_icon = match app.view_mode {
         ViewMode::Grid => "Grid",
         ViewMode::List => "List",
     };
 
-    let count_label_owned = count_label;
-
-    row![
+    let inner = row![
         text_input("Search files...", &app.search_query)
             .on_input(Message::SearchChanged)
             .on_submit(Message::SearchSubmit)
             .padding([8, 14])
             .width(Length::Fill),
         Space::with_width(10.0),
-        text(count_label_owned).size(12).color(theme::default_colors(app.theme_type).text_dim()),
+        text(count_label).size(12).color(colors.text_dim()),
         Space::with_width(10.0),
-        button(text(view_icon).size(13))
+        button(text(view_icon).size(13).color(colors.text()))
             .on_press(Message::ViewToggled)
-            .padding([6, 10]),
+            .padding([6, 10])
+            .style(btn_plain(colors)),
     ]
     .padding([12, 16])
-    .align_y(Alignment::Center)
-    .into()
+    .align_y(Alignment::Center);
+
+    container(inner)
+        .width(Length::Fill)
+        .style(bg_style(colors.bg()))
+        .into()
 }
 
 fn view_active_filters(app: &AkTags) -> Element<'_, Message> {
+    let colors = theme::default_colors(app.theme_type);
     if app.active_tags.is_empty() && app.active_category.is_none() {
         return Space::with_height(0.0).into();
     }
@@ -291,33 +375,34 @@ fn view_active_filters(app: &AkTags) -> Element<'_, Message> {
     let mut chips: Vec<Element<'_, Message>> = vec![];
 
     if let Some(cat) = &app.active_category {
-        chips.push(filter_chip(format!("{cat}"), Message::CategorySelected(None)));
+        chips.push(filter_chip(format!("{cat}"), Message::CategorySelected(None), colors));
     }
     for tag in &app.active_tags {
-        chips.push(filter_chip(tag.clone(), Message::TagToggled(tag.clone())));
+        chips.push(filter_chip(tag.clone(), Message::TagToggled(tag.clone()), colors));
     }
     chips.push(
-        button(text("Clear all").size(12))
+        button(text("Clear all").size(12).color(colors.text_dim()))
             .on_press(Message::ClearFilters)
             .padding([3, 10])
+            .style(btn_plain(colors))
             .into()
     );
 
     row(chips).spacing(6).padding([6, 16]).into()
 }
 
-fn filter_chip(label: String, on_remove: Message) -> Element<'static, Message> {
+fn filter_chip(label: String, on_remove: Message, colors: ThemeColors) -> Element<'static, Message> {
     button(
         row![
-            text(label).size(12),
+            text(label).size(12).color(colors.text()),
             Space::with_width(4.0),
-            text("×").size(14),
+            text("×").size(14).color(colors.text_dim()),
         ]
         .align_y(Alignment::Center)
     )
     .on_press(on_remove)
     .padding([3, 10])
-    .style(|_t, _s| button::Style::default())
+    .style(btn_tag(colors))
     .into()
 }
 
@@ -352,7 +437,7 @@ fn view_grid(app: &AkTags) -> Element<'_, Message> {
     .into()
 }
 
-fn file_card(file: &FileRecord, theme_type: theme::ThemeType, _selected: bool) -> Element<'_, Message> {
+fn file_card(file: &FileRecord, theme_type: theme::ThemeType, selected: bool) -> Element<'_, Message> {
     let colors = theme::default_colors(theme_type);
     let icon = file_type_icon(&file.extension);
     let name = truncate(&file.filename, 22);
@@ -361,10 +446,10 @@ fn file_card(file: &FileRecord, theme_type: theme::ThemeType, _selected: bool) -
 
     let tags: Vec<Element<'_, Message>> = file.tags.iter().take(3)
         .map(|t| {
-            button(text(t).size(10))
+            button(text(t).size(10).color(colors.text()))
                 .on_press(Message::TagToggled(t.clone()))
                 .padding([2, 6])
-                .style(|_t, _s| button::Style::default())
+                .style(btn_tag(colors))
                 .into()
         })
         .collect();
@@ -382,11 +467,25 @@ fn file_card(file: &FileRecord, theme_type: theme::ThemeType, _selected: bool) -
     .width(CARD_W)
     .height(CARD_H);
 
-    let btn = button(card_content)
-        .on_press(Message::FileSelected(file.id))
-        .style(|_t, _s| button::Style::default());
+    let bg = if selected { colors.surface2() } else { colors.surface() };
+    let border_color = if selected { colors.accent() } else { colors.border() };
 
-    btn.into()
+    button(card_content)
+        .on_press(Message::FileSelected(file.id))
+        .style(move |_, status| button::Style {
+            background: Some(match status {
+                button::Status::Hovered => colors.surface2().into(),
+                _ => bg.into(),
+            }),
+            text_color: colors.text(),
+            border: Border {
+                color: border_color,
+                width: if selected { 1.5 } else { 1.0 },
+                radius: 8.0.into(),
+            },
+            ..Default::default()
+        })
+        .into()
 }
 
 // ── List view ─────────────────────────────────────────────────────────────────
@@ -408,15 +507,15 @@ fn view_list(app: &AkTags) -> Element<'_, Message> {
         .into()
 }
 
-fn file_row(file: &FileRecord, theme_type: theme::ThemeType, _selected: bool) -> Element<'_, Message> {
+fn file_row(file: &FileRecord, theme_type: theme::ThemeType, selected: bool) -> Element<'_, Message> {
     let colors = theme::default_colors(theme_type);
     let icon = file_type_icon(&file.extension);
     let tags: Vec<Element<'_, Message>> = file.tags.iter().take(4)
         .map(|t| {
-            button(text(t).size(11))
+            button(text(t).size(11).color(colors.text()))
                 .on_press(Message::TagToggled(t.clone()))
                 .padding([2, 6])
-                .style(|_t, _s| button::Style::default())
+                .style(btn_tag(colors))
                 .into()
         })
         .collect();
@@ -424,7 +523,7 @@ fn file_row(file: &FileRecord, theme_type: theme::ThemeType, _selected: bool) ->
     let row_content = row![
         text(icon).size(18).width(30.0),
         column![
-            text(&file.filename).size(13),
+            text(&file.filename).size(13).color(colors.text()),
             text(file.summary.as_deref().unwrap_or("")).size(11)
                 .color(colors.text_dim()),
         ]
@@ -442,10 +541,23 @@ fn file_row(file: &FileRecord, theme_type: theme::ThemeType, _selected: bool) ->
     .align_y(Alignment::Center)
     .padding([8, 12]);
 
+    let bg = if selected { colors.surface2() } else { colors.bg() };
     button(row_content)
         .on_press(Message::FileSelected(file.id))
         .width(Length::Fill)
-        .style(|_t, _s| button::Style::default())
+        .style(move |_, status| button::Style {
+            background: Some(match status {
+                button::Status::Hovered => colors.surface2().into(),
+                _ => bg.into(),
+            }),
+            text_color: colors.text(),
+            border: Border {
+                color: if selected { colors.accent() } else { Color::TRANSPARENT },
+                width: 1.0,
+                radius: 6.0.into(),
+            },
+            ..Default::default()
+        })
         .into()
 }
 
@@ -456,17 +568,19 @@ fn view_detail(app: &AkTags) -> Element<'_, Message> {
         return Space::with_width(0.0).into();
     };
 
+    let colors = theme::default_colors(app.theme_type);
+
     let tags: Vec<Element<'_, Message>> = file.tags.iter()
         .map(|t| {
             row![
-                button(text(t).size(12))
+                button(text(t).size(12).color(colors.text()))
                     .on_press(Message::TagToggled(t.clone()))
                     .padding([3, 8])
-                    .style(|_t, _s| button::Style::default()),
-                button(text("×").size(12))
+                    .style(btn_tag(colors)),
+                button(text("×").size(12).color(colors.red()))
                     .on_press(Message::RemoveTagFromFile(file.id, t.clone()))
                     .padding([3, 6])
-                    .style(|_t, _s| button::Style::default()),
+                    .style(btn_plain(colors)),
             ]
             .spacing(2)
             .into()
@@ -476,37 +590,34 @@ fn view_detail(app: &AkTags) -> Element<'_, Message> {
     let content = column![
         // Close + open buttons
         row![
-            button(text("×").size(16))
+            button(text("×").size(16).color(colors.text_dim()))
                 .on_press(Message::FileDeselected)
-                .style(|_t, _s| button::Style::default()),
+                .style(btn_plain(colors)),
             Space::with_width(Length::Fill),
-            button(text("Open").size(13))
+            button(text("Open").size(13).color(Color::WHITE))
                 .on_press(Message::FileOpened(file.id))
-                .padding([6, 12]),
+                .padding([6, 12])
+                .style(btn_accent(colors)),
         ]
         .align_y(Alignment::Center),
         Space::with_height(12.0),
 
         // File icon + name
         text(file_type_icon(&file.extension)).size(40),
-        text(&file.filename).size(14),
-        text(&file.category).size(11)
-            .color(theme::default_colors(app.theme_type).text_dim()),
+        text(&file.filename).size(14).color(colors.text()),
+        text(&file.category).size(11).color(colors.text_dim()),
         Space::with_height(4.0),
-        text(fmt_size(file.size_bytes)).size(11)
-            .color(theme::default_colors(app.theme_type).text_dim()),
+        text(fmt_size(file.size_bytes)).size(11).color(colors.text_dim()),
         Space::with_height(12.0),
 
         // Summary
-        text("Summary").size(11)
-            .color(theme::default_colors(app.theme_type).text_dim()),
+        text("Summary").size(11).color(colors.text_dim()),
         text(file.summary.as_deref().unwrap_or("No summary yet"))
-            .size(12),
+            .size(12).color(colors.text()),
         Space::with_height(12.0),
 
         // Tags
-        text("Tags").size(11)
-            .color(theme::default_colors(app.theme_type).text_dim()),
+        text("Tags").size(11).color(colors.text_dim()),
         Row::with_children(tags).spacing(4),
         Space::with_height(8.0),
 
@@ -517,19 +628,18 @@ fn view_detail(app: &AkTags) -> Element<'_, Message> {
                 .on_submit(Message::TagInputSubmit)
                 .padding([6, 10])
                 .width(Length::Fill),
-            button(text("+").size(14))
+            button(text("+").size(14).color(Color::WHITE))
                 .on_press(Message::TagInputSubmit)
-                .padding([6, 10]),
+                .padding([6, 10])
+                .style(btn_accent(colors)),
         ]
         .spacing(6),
 
         Space::with_height(12.0),
 
         // Path
-        text("Path").size(11)
-            .color(theme::default_colors(app.theme_type).text_dim()),
-        text(&file.path).size(11)
-            .color(theme::default_colors(app.theme_type).text_dim()),
+        text("Path").size(11).color(colors.text_dim()),
+        text(&file.path).size(11).color(colors.text_dim()),
     ]
     .spacing(4)
     .padding(16);
@@ -537,6 +647,7 @@ fn view_detail(app: &AkTags) -> Element<'_, Message> {
     container(scrollable(content))
         .width(DETAIL_W)
         .height(Length::Fill)
+        .style(bg_style(colors.surface()))
         .into()
 }
 
@@ -546,11 +657,10 @@ fn empty_state<'a>(title: &'a str, subtitle: &'a str, theme_type: theme::ThemeTy
     let colors = theme::default_colors(theme_type);
     container(
         column![
-            text("?").size(48),
+            text("?").size(48).color(colors.text_dim()),
             Space::with_height(12.0),
-            text(title).size(16),
-            text(subtitle).size(13)
-                .color(colors.text_dim()),
+            text(title).size(16).color(colors.text()),
+            text(subtitle).size(13).color(colors.text_dim()),
         ]
         .spacing(8)
         .align_x(Alignment::Center)
