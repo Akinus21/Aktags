@@ -37,12 +37,20 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
 
     // 2. FETCH SERVER MANIFEST
     info!("[sync] fetching server manifest ...");
-    let server_manifest = http
+    let manifest_resp = http
         .get(format!("{}/api/sync/manifest", base))
         .send()
         .await
-        .context("Fetching server manifest")?
-        .json::<Vec<client::ManifestEntry>>()
+        .context("Fetching server manifest")?;
+    if !manifest_resp.status().is_success() {
+        let status = manifest_resp.status();
+        let body = manifest_resp.text().await.unwrap_or_default();
+        return Err(anyhow::anyhow!(
+            "Server manifest endpoint returned HTTP {}: {}", status, body
+        ));
+    }
+    let server_manifest: Vec<client::ManifestEntry> = manifest_resp
+        .json()
         .await
         .context("Parsing server manifest")?;
 
