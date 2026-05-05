@@ -1,9 +1,10 @@
 use iced::{
+    Element, Length, Theme,
     widget::{
         button, column, container, row, scrollable, text,
         text_input, toggler, Column, Space,
     },
-    Alignment, Element, Length,
+    Alignment,
 };
 use std::path::PathBuf;
 
@@ -274,7 +275,7 @@ pub fn view(app: &AkTags) -> Element<'_, Message> {
                 button(text("Upgrade Now").size(11).color(colors.accent()))
                     .on_press(Message::BrewUpgradeNow)
                     .padding([4, 10])
-                    .style(|_theme, _status| button::Style::default()),
+                    .style(|_theme: &Theme, _status| button::Style::default()),
             ].into()
         },
 

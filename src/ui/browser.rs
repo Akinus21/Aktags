@@ -854,7 +854,7 @@ fn wrap_tag_rows(
 }
 
 fn icon_view(icon_cache: &IconCache, ext: &str, path: &str, size: u32) -> Element<'static, Message> {
-    let ext_lower = ext.to_lowercase();
+    let _ext_lower = ext.to_lowercase();
 
     if is_image_file(ext) {
         if let Some(cached) = icon_cache.get_path(path) {
