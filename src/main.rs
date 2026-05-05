@@ -1,9 +1,11 @@
 mod config;
 mod daemon;
 mod db;
+mod diagnostics;
 mod extractor;
 mod graveyard;
 mod icon;
+mod auto_update;
 mod tagger;
 mod taxonomy;
 mod ui;

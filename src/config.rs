@@ -15,6 +15,8 @@ pub struct Config {
     pub ui: UiConfig,
     pub cloud: CloudConfig,
     pub graveyard: GraveyardConfig,
+    pub auto_update: AutoUpdateConfig,
+    pub diagnostics: DiagnosticsConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -76,6 +78,36 @@ impl Default for GraveyardConfig {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AutoUpdateConfig {
+    pub enabled: bool,
+    pub check_interval_secs: u64,
+}
+
+impl Default for AutoUpdateConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            check_interval_secs: 300,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DiagnosticsConfig {
+    pub enabled: bool,
+    pub webhook_url: String,
+}
+
+impl Default for DiagnosticsConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            webhook_url: "https://webhook.akinus21.com/webhook/aktags-build".to_string(),
+        }
+    }
+}
+
 fn home_dir() -> PathBuf {
     std::env::var("HOME")
         .ok()
@@ -98,6 +130,8 @@ impl Default for Config {
             ui: UiConfig::default(),
             cloud: CloudConfig::default(),
             graveyard: GraveyardConfig::default(),
+            auto_update: AutoUpdateConfig::default(),
+            diagnostics: DiagnosticsConfig::default(),
         }
     }
 }

@@ -242,6 +242,89 @@ pub fn view(app: &AkTags) -> Element<'_, Message> {
 
         Space::with_height(24.0),
 
+        // ── Auto-Update ────────────────────────────────────────────────────────
+        section_header("Auto-Update".to_string(), colors),
+
+        row![
+            text("Enable auto-update via brew").size(12).color(colors.text_dim()),
+            Space::with_width(Length::Fill),
+            toggler(app.settings_auto_update_enabled)
+                .on_toggle(Message::AutoUpdateToggled),
+        ]
+        .align_y(Alignment::Center),
+
+        Space::with_height(8.0),
+        stat_row("Interval".to_string(), format!("{}s", app.config.auto_update.check_interval_secs), colors),
+
+        Space::with_height(8.0),
+        {
+            let label = if app.settings_auto_update_enabled {
+                "Auto-update enabled"
+            } else {
+                "Auto-update disabled"
+            };
+            let color = if app.settings_auto_update_enabled {
+                colors.green()
+            } else {
+                colors.text_dim()
+            };
+            row![
+                text(label).size(12).color(color),
+                Space::with_width(Length::Fill),
+                button(text("Upgrade Now").size(11).color(colors.accent()))
+                    .on_press(Message::BrewUpgradeNow)
+                    .padding([4, 10])
+                    .style(|_theme, _status| button::Style::default()),
+            ].into()
+        },
+
+        Space::with_height(24.0),
+
+        // ── Diagnostics ───────────────────────────────────────────────────────
+        section_header("Diagnostics".to_string(), colors),
+
+        row![
+            text("Send error reports to webhook").size(12).color(colors.text_dim()),
+            Space::with_width(Length::Fill),
+            toggler(app.settings_diagnostics_enabled)
+                .on_toggle(Message::DiagnosticsToggled),
+        ]
+        .align_y(Alignment::Center),
+
+        Space::with_height(8.0),
+        label("Webhook URL".to_string(), colors),
+        text_input(
+            "https://webhook.akinus21.com/webhook/aktags-build",
+            &app.settings_diagnostics_webhook_url,
+        )
+        .on_input(Message::DiagnosticsWebhookChanged)
+        .padding([8, 12])
+        .width(400.0),
+
+        Space::with_height(8.0),
+        {
+            let status_label = if app.settings_diagnostics_enabled {
+                "Reporting enabled"
+            } else {
+                "Reporting disabled"
+            };
+            let status_color = if app.settings_diagnostics_enabled {
+                colors.green()
+            } else {
+                colors.text_dim()
+            };
+            Element::from(row![
+                text(status_label).size(12).color(status_color),
+                Space::with_width(Length::Fill),
+                button(text("Send Report Now").size(11).color(colors.accent()))
+                    .on_press(Message::SendDiagnosticsReport)
+                    .padding([4, 10])
+                    .style(|_theme, _status| button::Style::default()),
+            ])
+        },
+
+        Space::with_height(24.0),
+
         // ── Theme ────────────────────────────────────────────────────────────
         section_header("Appearance".to_string(), colors),
         row![

@@ -93,6 +93,15 @@ pub enum Message {
     CloudUrlChanged(String),
     CloudApiKeyChanged(String),
     CloudEnabledToggled(bool),
+    AutoUpdateToggled(bool),
+    AutoUpdateCheck,
+    BrewOutdated(bool),
+    BrewUpgradeNow,
+    BrewUpgradeResult(Result<(), String>),
+    DiagnosticsToggled(bool),
+    DiagnosticsWebhookChanged(String),
+    SendDiagnosticsReport,
+    DiagnosticsReportSent(Result<(), String>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -153,6 +162,9 @@ pub struct AkTags {
     pub sort_field: SortField,
     pub sort_direction: SortDirection,
     pub icon_cache: IconCache,
+    pub settings_auto_update_enabled: bool,
+    pub settings_diagnostics_enabled: bool,
+    pub settings_diagnostics_webhook_url: String,
 }
 
 #[derive(Debug, Clone)]
@@ -219,6 +231,9 @@ impl AkTags {
             sort_field: SortField::Name,
             sort_direction: SortDirection::Ascending,
             icon_cache: IconCache::new(),
+            settings_auto_update_enabled: config.auto_update.enabled,
+            settings_diagnostics_enabled: config.diagnostics.enabled,
+            settings_diagnostics_webhook_url: config.diagnostics.webhook_url.clone(),
         };
 
         let cmd = if app.panel == Panel::Browser {
@@ -464,6 +479,68 @@ impl AkTags {
             Message::CloudApiKeyChanged(s)   => { self.settings_cloud_api_key = s; }
             Message::CloudEnabledToggled(v)  => { self.settings_cloud_enabled = v; }
 
+            Message::AutoUpdateToggled(v) => {
+                self.settings_auto_update_enabled = v;
+            }
+
+            Message::DiagnosticsToggled(v) => {
+                self.settings_diagnostics_enabled = v;
+            }
+
+            Message::DiagnosticsWebhookChanged(s) => {
+                self.settings_diagnostics_webhook_url = s;
+            }
+
+            Message::SendDiagnosticsReport => {
+                let webhook_url = self.settings_diagnostics_webhook_url.clone();
+                return Task::perform(
+                    async move {
+                        let entries = crate::diagnostics::read_recent_log_errors();
+                        crate::diagnostics::send_report(&webhook_url, entries).await
+                            .map_err(|e| e.to_string())
+                    },
+                    Message::DiagnosticsReportSent,
+                );
+            }
+
+            Message::AutoUpdateCheck => {
+                return Task::perform(crate::auto_update::check_brew_outdated(), Message::BrewOutdated);
+            }
+
+            Message::BrewOutdated(is_outdated) => {
+                if is_outdated {
+                    self.status_message = Some("Update available via brew".into());
+                }
+            }
+
+            Message::BrewUpgradeNow => {
+                self.status_message = Some("Upgrading via brew...".into());
+                return Task::perform(crate::auto_update::brew_upgrade(), Message::BrewUpgradeResult);
+            }
+
+            Message::BrewUpgradeResult(result) => {
+                match result {
+                    Ok(()) => {
+                        self.status_message = Some("Upgrade complete. Restarting...".into());
+                        crate::auto_update::restart_self();
+                    }
+                    Err(e) => {
+                        self.status_message = Some(format!("Upgrade failed: {}", e));
+                    }
+                }
+            }
+
+            Message::DiagnosticsReportSent(result) => {
+                match result {
+                    Ok(()) => {
+                        self.status_message = Some("Diagnostics report sent".into());
+                    }
+                    Err(e) => {
+                        self.status_message = Some(format!("Diagnostics report failed: {}", e));
+                    }
+                }
+            }
+
             Message::WatchDirAdd(dir) => {
                 let path = PathBuf::from(shellexpand::tilde(&dir).as_ref());
                 if !self.config.watch_dirs.contains(&path) {
@@ -488,6 +565,9 @@ impl AkTags {
                 self.config.cloud.url       = self.settings_cloud_url.clone();
                 self.config.cloud.api_key   = self.settings_cloud_api_key.clone();
                 self.config.cloud.enabled   = self.settings_cloud_enabled;
+                self.config.auto_update.enabled   = self.settings_auto_update_enabled;
+                self.config.diagnostics.enabled  = self.settings_diagnostics_enabled;
+                self.config.diagnostics.webhook_url = self.settings_diagnostics_webhook_url.clone();
                 let _ = config::save(&self.config);
                 self.daemon.lock().unwrap().update_config(self.config.clone());
                 self.status_message = Some("Settings saved".into());
@@ -593,12 +673,21 @@ impl AkTags {
     }
 
     pub fn subscription(&self) -> Subscription<Message> {
-        Subscription::batch([
+        let mut subs = vec![
             time::every(std::time::Duration::from_secs(3))
                 .map(|_| Message::Tick),
             time::every(std::time::Duration::from_secs(3600))
                 .map(|_| Message::CheckForUpdate),
-        ])
+        ];
+
+        if self.config.auto_update.enabled {
+            let interval = std::time::Duration::from_secs(self.config.auto_update.check_interval_secs);
+            subs.push(
+                time::every(interval).map(|_| Message::AutoUpdateCheck),
+            );
+        }
+
+        Subscription::batch(subs)
     }
 
     // ── Helper commands ───────────────────────────────────────────────────────
