@@ -257,6 +257,7 @@ fn view_sidebar(app: &AkTags) -> Element<'_, Message> {
             button(text(label).size(11).color(colors2.text()))
                 .on_press(Message::TagToggled(tag.clone()))
                 .padding([3, 8])
+                .height(Length::Shrink)
                 .style(btn_tag(colors2))
                 .into()
         })
