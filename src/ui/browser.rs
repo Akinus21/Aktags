@@ -241,21 +241,28 @@ fn view_sidebar(app: &AkTags) -> Element<'_, Message> {
         }
     }
 
-    // Build tag chips with wrapping (keep each tag intact, wrap to next row)
-    let tag_chips: Vec<Element<'_, Message>> = app.all_tags.iter()
+    // Build tag chips — sorted alphabetically by tag name, free-flowing wrap
+    let mut tag_pairs: Vec<(String, i64)> = app.all_tags.iter()
         .take(100)
+        .map(|(tag, count)| (tag.clone(), *count))
+        .collect();
+    tag_pairs.sort_by(|a, b| a.0.cmp(&b.0));
+
+    let tag_chips: Vec<Element<'_, Message>> = tag_pairs
+        .iter()
         .map(|(tag, count)| {
             let label = format!("{} {}", tag, count);
-            button(text(label).size(11).color(colors.text()))
+            let colors2 = colors;
+            button(text(label).size(11).color(colors2.text()))
                 .on_press(Message::TagToggled(tag.clone()))
                 .padding([3, 8])
-                .style(btn_tag(colors))
+                .style(btn_tag(colors2))
                 .into()
         })
         .collect();
 
-    // Wrap tags into rows that fit sidebar width (approx 5-6 per row)
-    let wrapped_tags = wrap_tag_rows(tag_chips, 5, 4.0);
+    // Wrap tags into rows that fit sidebar width
+    let wrapped_tags = wrap_tag_rows(tag_chips, 4.0, SIDEBAR_W - 28.0);
 
     let sidebar_content = column![
         text("Categories").size(11).color(colors.text_dim()),
@@ -308,12 +315,12 @@ fn category_item(
 
 fn category_icon(cat: &str) -> &'static str {
     match cat {
-        "documents" => "📄",
-        "images"    => "🖼",
-        "code"      => "⚙",
-        "audio"     => "🎵",
-        "video"     => "🎬",
-        _           => "📁",
+        "documents" => "[DOC]",
+        "images"    => "[IMG]",
+        "code"      => "[COD]",
+        "audio"     => "[AUD]",
+        "video"     => "[VID]",
+        _           => "[DIR]",
     }
 }
 
@@ -752,15 +759,16 @@ fn empty_state<'a>(title: &'a str, subtitle: &'a str, theme_type: theme::ThemeTy
 
 fn file_type_icon(ext: &str) -> &'static str {
     match ext {
-        ".pdf"  => "📄", ".doc" | ".docx" => "📝",
-        ".txt" | ".md" => "📃", ".xls" | ".xlsx" => "📊",
-        ".ppt" | ".pptx" => "📽", ".py" => "🐍",
-        ".js" | ".ts" => "📜", ".sh" | ".bash" => "⌨",
-        ".json" | ".yaml" | ".yml" => "⚙",
-        ".jpg" | ".jpeg" | ".png" | ".gif" | ".webp" => "🖼",
-        ".mp3" | ".wav" | ".flac" => "🎵",
-        ".mp4" | ".mkv" | ".avi" => "🎬",
-        _ => "📁",
+        ".pdf"  => "[PDF]", ".doc" | ".docx" => "[DOC]",
+        ".txt" | ".md" => "[TXT]", ".xls" | ".xlsx" => "[XLS]",
+        ".ppt" | ".pptx" => "[PPT]", ".py" => "[PY]",
+        ".js" | ".ts" => "[JS]", ".sh" | ".bash" => "[SH]",
+        ".json" | ".yaml" | ".yml" => "[CFG]",
+        ".jpg" | ".jpeg" | ".png" | ".gif" | ".webp" => "[IMG]",
+        ".mp3" | ".wav" | ".flac" => "[AUD]",
+        ".mp4" | ".mkv" | ".avi" => "[VID]",
+        ".zip" | ".tar" | ".gz" | ".rar" => "[ARC]",
+        _ => "[FILE]",
     }
 }
 
@@ -782,32 +790,41 @@ fn truncate(s: &str, max: usize) -> String {
 
 fn wrap_tag_rows(
     items: Vec<Element<'_, Message>>,
-    per_row: usize,
     spacing: f32,
+    available_width: f32,
 ) -> Element<'_, Message> {
     if items.is_empty() {
         return Space::with_height(0.0).into();
     }
     let mut rows: Vec<Element<'_, Message>> = Vec::new();
-    let mut current: Vec<Element<'_, Message>> = Vec::with_capacity(per_row);
+    let mut current_row: Vec<Element<'_, Message>> = Vec::new();
+    let mut current_row_width: f32 = 0.0;
+
+    let chip_spacing = spacing;
+    let chip_padding = 16.0; // [3,8] * 2
+
     for item in items {
-        current.push(item);
-        if current.len() == per_row {
+        current_row.push(item);
+        current_row_width += 80.0 + chip_spacing + chip_padding; // rough estimate per tag
+
+        if current_row_width >= available_width && !rows.is_empty() {
             rows.push(
-                Row::with_children(current)
-                    .spacing(spacing)
+                Row::with_children(std::mem::take(&mut current_row))
+                    .spacing(chip_spacing)
                     .into()
             );
-            current = Vec::with_capacity(per_row);
+            current_row_width = 0.0;
         }
     }
-    if !current.is_empty() {
+
+    if !current_row.is_empty() {
         rows.push(
-            Row::with_children(current)
-                .spacing(spacing)
+            Row::with_children(current_row)
+                .spacing(chip_spacing)
                 .into()
         );
     }
+
     Column::with_children(rows)
         .spacing(spacing)
         .width(Length::Fill)
