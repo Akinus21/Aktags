@@ -257,10 +257,10 @@ fn view_sidebar(app: &AkTags) -> Element<'_, Message> {
             container(
                 button(text(label).size(11).color(colors2.text()))
                     .on_press(Message::TagToggled(tag.clone()))
-                    .padding([2, 6])
+                    .padding([1, 5])
                     .style(btn_tag(colors2))
             )
-            .height(18.0)
+            .height(15.0)
             .width(Length::Shrink)
             .into()
         })
@@ -269,7 +269,7 @@ fn view_sidebar(app: &AkTags) -> Element<'_, Message> {
     let tags_section = column![
         text("Tags").size(11).color(colors.text_dim()),
         scrollable(
-            Row::with_children(tag_items).spacing(3).wrap()
+            Row::with_children(tag_items).spacing(2).wrap()
         ).height(Length::Fill),
     ]
     .spacing(2)
