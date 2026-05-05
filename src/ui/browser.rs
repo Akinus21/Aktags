@@ -257,7 +257,7 @@ fn view_sidebar(app: &AkTags) -> Element<'_, Message> {
             container(
                 button(
                     container(text(label).size(11).color(colors2.text()))
-                        .align_y(iced::Alignment::Center)
+                        .center_y()
                         .height(Length::Fill)
                 )
                 .on_press(Message::TagToggled(tag.clone()))
@@ -269,7 +269,7 @@ fn view_sidebar(app: &AkTags) -> Element<'_, Message> {
                     ..Default::default()
                 })
             )
-            .height(14.0)
+            .height(13.0)
             .width(Length::Shrink)
             .into()
         })
@@ -277,11 +277,12 @@ fn view_sidebar(app: &AkTags) -> Element<'_, Message> {
 
     let tags_section = column![
         text("Tags").size(11).color(colors.text_dim()),
+        Space::with_height(4.0),
         scrollable(
             Row::with_children(tag_items).spacing(2).wrap()
         ).height(Length::Fill),
     ]
-    .spacing(4)
+    .spacing(0)
     .padding([8, 10]);
 
     let sidebar_content = column![
