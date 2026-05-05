@@ -255,15 +255,19 @@ fn view_sidebar(app: &AkTags) -> Element<'_, Message> {
             let label = format!("{} {}", tag, count);
             let colors2 = colors;
             container(
-                button(text(label).size(11).color(colors2.text()))
-                    .on_press(Message::TagToggled(tag.clone()))
-                    .padding([1, 5])
-                    .style(move |_, _| button::Style {
-                        background: Some(colors2.tag_bg().into()),
-                        text_color: colors2.text(),
-                        border: iced::border::Border { radius: 3.0.into(), ..Default::default() },
-                        ..Default::default()
-                    })
+                button(
+                    container(text(label).size(11).color(colors2.text()))
+                        .align_y(iced::Alignment::Center)
+                        .height(Length::Fill)
+                )
+                .on_press(Message::TagToggled(tag.clone()))
+                .padding([0, 5])
+                .style(move |_, _| button::Style {
+                    background: Some(colors2.tag_bg().into()),
+                    text_color: colors2.text(),
+                    border: iced::border::Border { radius: 3.0.into(), ..Default::default() },
+                    ..Default::default()
+                })
             )
             .height(14.0)
             .width(Length::Shrink)
