@@ -174,7 +174,7 @@ fn view_header(app: &AkTags) -> Element<'_, Message> {
 
     container(inner)
         .width(Length::Fill)
-        .style(bg_style(colors.surface()))
+        .style(bg_style(colors.bg()))
         .into()
 }
 
@@ -249,7 +249,7 @@ fn view_sidebar(app: &AkTags) -> Element<'_, Message> {
         .collect();
     tag_pairs.sort_by(|a, b| a.0.cmp(&b.0));
 
-    let tag_chips: Vec<Element<'_, Message>> = tag_pairs
+    let tag_items: Vec<Element<'_, Message>> = tag_pairs
         .iter()
         .map(|(tag, count)| {
             let label = format!("{} {}", tag, count);
@@ -262,8 +262,14 @@ fn view_sidebar(app: &AkTags) -> Element<'_, Message> {
         })
         .collect();
 
-    // Wrap tags into rows that fit sidebar width
-    let wrapped_tags = wrap_tag_rows(tag_chips, 4.0, SIDEBAR_W - 28.0);
+    let tags_section = column![
+        text("Tags").size(11).color(colors.text_dim()),
+        scrollable(
+            Row::with_children(tag_items).spacing(4).wrap()
+        ).height(Length::Fill),
+    ]
+    .spacing(4)
+    .padding([8, 10]);
 
     let sidebar_content = column![
         text("Categories").size(11).color(colors.text_dim()),
@@ -271,9 +277,7 @@ fn view_sidebar(app: &AkTags) -> Element<'_, Message> {
         Column::with_children(cat_items).spacing(2),
         horizontal_rule(1),
         Space::with_height(12.0),
-        text("Tags").size(11).color(colors.text_dim()),
-        Space::with_height(8.0),
-        wrapped_tags,
+        tags_section,
     ]
     .spacing(4)
     .padding(14)
@@ -880,5 +884,5 @@ fn icon_view(icon_cache: &IconCache, ext: &str, path: &str, size: u32) -> Elemen
     }
 
     let fallback = file_type_icon(ext);
-    text(fallback).size(size).into()
+    text(fallback).size(size as f32).into()
 }
