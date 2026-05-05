@@ -110,6 +110,38 @@ fn init_schema(pool: &DbPool) -> Result<()> {
             VALUES (new.id, new.filename, new.summary, new.tags);
         END;
     "#)?;
+
+    migrate_synced_cols(&conn)?;
+    Ok(())
+}
+
+fn migrate_synced_cols(conn: &rusqlite::Connection) -> Result<()> {
+    let has_synced_at: bool = conn.query_row(
+        "PRAGMA table_info(files)",
+        [],
+        |row| {
+            let col: String = row.get(1)?;
+            Ok(col == "synced_at")
+        },
+    ).unwrap_or(false);
+
+    if !has_synced_at {
+        conn.execute("ALTER TABLE files ADD COLUMN synced_at TEXT", [])?;
+    }
+
+    let has_synced_hash: bool = conn.query_row(
+        "PRAGMA table_info(files)",
+        [],
+        |row| {
+            let col: String = row.get(1)?;
+            Ok(col == "synced_hash")
+        },
+    ).unwrap_or(false);
+
+    if !has_synced_hash {
+        conn.execute("ALTER TABLE files ADD COLUMN synced_hash TEXT", [])?;
+    }
+
     Ok(())
 }
 

@@ -116,12 +116,13 @@ pub async fn tag_file(
             OllamaMessage { role: "user".into(), content: user },
         ],
         stream: false,
-        options: OllamaOptions { temperature: 0.2, num_predict: 256 },
+        options: OllamaOptions { temperature: 0.2, num_predict: 1024 },
     };
 
     let url = format!("{}/api/chat", base_url.trim_end_matches('/'));
     let resp = client.post(&url)
         .json(&payload)
+        .timeout(std::time::Duration::from_secs(60))
         .send()
         .await?;
 
