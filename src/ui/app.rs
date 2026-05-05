@@ -185,7 +185,7 @@ impl AkTags {
             daemon: Arc::new(Mutex::new(daemon)),
             shutdown_tx: None,
             panel: initial_panel,
-            view_mode: ViewMode::Grid,
+            view_mode: ViewMode::List,
             files: vec![],
             all_tags: vec![],
             active_tags: vec![],

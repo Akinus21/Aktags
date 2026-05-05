@@ -73,7 +73,9 @@ fn init_schema(pool: &DbPool) -> Result<()> {
             tagged_at   TEXT,
             modified_at TEXT,
             indexed_at  TEXT DEFAULT (datetime('now')),
-            error       TEXT
+            error       TEXT,
+            synced_at   TEXT,
+            synced_hash TEXT
         );
 
         CREATE TABLE IF NOT EXISTS tag_index (
@@ -208,6 +210,16 @@ pub fn upsert_tags(pool: &DbPool, file_id: i64, tags: &[String]) -> Result<()> {
             params![tag.to_lowercase(), file_id],
         )?;
     }
+    Ok(())
+}
+
+pub fn mark_synced(pool: &DbPool, path: &str, hash: &str) -> Result<()> {
+    let conn = pool.get()?;
+    let now = Utc::now().to_rfc3339();
+    conn.execute(
+        "UPDATE files SET synced_at=?, synced_hash=? WHERE path=?",
+        params![now, hash, path],
+    )?;
     Ok(())
 }
 

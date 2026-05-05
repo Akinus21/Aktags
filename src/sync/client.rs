@@ -28,11 +28,15 @@ pub fn new_client(api_key: &str) -> Result<reqwest::Client> {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FileRecord {
     pub id: i64,
+    #[serde(default, alias = "name")]
+    pub filename: Option<String>,
     #[serde(default)]
-    pub filename: String,
     pub path: String,
+    #[serde(default)]
     pub hash: String,
+    #[serde(default)]
     pub size: i64,
+    #[serde(default)]
     pub mtime: i64,
     #[serde(default)]
     pub tags: Vec<String>,
@@ -53,11 +57,11 @@ pub struct ManifestEntry {
     pub size: i64,
 }
 
-/// Build local manifest from DB.
+/// Build local manifest from DB (only synced files).
 pub async fn build_local_manifest(pool: &DbPool) -> Result<Vec<ManifestEntry>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare(
-        "SELECT path, file_hash, modified_at, size_bytes FROM files WHERE file_hash IS NOT NULL"
+        "SELECT path, synced_hash, modified_at, size_bytes FROM files WHERE synced_hash IS NOT NULL"
     )?;
     let rows = stmt.query_map([], |row| {
         let path: String = row.get(0)?;

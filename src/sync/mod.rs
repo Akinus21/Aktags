@@ -94,6 +94,12 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
         match client::upload_file(&http, base, remote_name, &local_path).await {
             Ok(()) => {
                 info!("[sync] uploaded {}", entry.path);
+                let pool = pool.clone();
+                let path = entry.path.clone();
+                let hash = entry.hash.clone();
+                tokio::task::block_in_place(|| {
+                    let _ = crate::db::mark_synced(&pool, &path, &hash);
+                });
             }
             Err(e) => {
                 error!("[sync] upload failed for {}: {}", entry.path, e);
@@ -110,6 +116,12 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
         match client::download_file(&http, base, remote_path, &local_path).await {
             Ok(()) => {
                 info!("[sync] downloaded {}", entry.path);
+                let pool = pool.clone();
+                let path = entry.path.clone();
+                let hash = entry.hash.clone();
+                tokio::task::block_in_place(|| {
+                    let _ = crate::db::mark_synced(&pool, &path, &hash);
+                });
             }
             Err(e) => {
                 error!("[sync] download failed for {}: {}", entry.path, e);
@@ -126,9 +138,15 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
         if mtime_local > mtime_server {
             // Local wins → upload
             let local_disk = shellexpand::tilde(&local.path).to_string();
+            let pool = pool.clone();
             match client::upload_file(&http, base, &local.path, &local_disk).await {
                 Ok(()) => {
                     info!("[sync] uploaded {} (local newer)", path);
+                    let hash = local.hash.clone();
+                    let path = local.path.clone();
+                    tokio::task::block_in_place(|| {
+                        let _ = crate::db::mark_synced(&pool, &path, &hash);
+                    });
                 }
                 Err(e) => {
                     error!("[sync] upload failed for {}: {}", path, e);
@@ -137,6 +155,7 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
         } else {
             // Server wins → download (before overwriting local file, entomb local copy)
             let local_disk = shellexpand::tilde(&local.path).to_string();
+            let pool = pool.clone();
             // Entomb local losing copy
             let _ = crate::graveyard::entomb(
                 std::path::Path::new(&local_disk),
@@ -150,6 +169,11 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
             match client::download_file(&http, base, &server.path, &local_disk).await {
                 Ok(()) => {
                     info!("[sync] downloaded {} (server newer)", path);
+                    let hash = server.hash.clone();
+                    let path = local.path.clone();
+                    tokio::task::block_in_place(|| {
+                        let _ = crate::db::mark_synced(&pool, &path, &hash);
+                    });
                 }
                 Err(e) => {
                     error!("[sync] download failed for {}: {}", path, e);
