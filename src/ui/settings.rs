@@ -260,17 +260,18 @@ pub fn view(app: &AkTags) -> Element<'_, Message> {
         Space::with_height(8.0),
         {
             let label = if app.settings_auto_update_enabled {
-                "Auto-update enabled"
+                "Auto-update enabled".to_string()
             } else {
-                "Auto-update disabled"
+                "Auto-update disabled".to_string()
             };
             let color = if app.settings_auto_update_enabled {
                 colors.green()
             } else {
                 colors.text_dim()
             };
+            let label_text = text(label).size(12).color(color);
             row![
-                text(label).size(12).color(color),
+                label_text,
                 Space::with_width(Length::Fill),
                 button(text("Upgrade Now").size(11).color(colors.accent()))
                     .on_press(Message::BrewUpgradeNow)
@@ -305,22 +306,23 @@ pub fn view(app: &AkTags) -> Element<'_, Message> {
         Space::with_height(8.0),
         {
             let status_label = if app.settings_diagnostics_enabled {
-                "Reporting enabled"
+                "Reporting enabled".to_string()
             } else {
-                "Reporting disabled"
+                "Reporting disabled".to_string()
             };
             let status_color = if app.settings_diagnostics_enabled {
                 colors.green()
             } else {
                 colors.text_dim()
             };
+            let status_text = text(status_label).size(12).color(status_color);
             Element::from(row![
-                text(status_label).size(12).color(status_color),
+                status_text,
                 Space::with_width(Length::Fill),
                 button(text("Send Report Now").size(11).color(colors.accent()))
                     .on_press(Message::SendDiagnosticsReport)
                     .padding([4, 10])
-                    .style(|_theme, _status| button::Style::default()),
+                    .style(|_theme: &Theme, _status| button::Style::default()),
             ])
         },
 
