@@ -254,15 +254,12 @@ fn view_sidebar(app: &AkTags) -> Element<'_, Message> {
         .map(|(tag, count)| {
             let label = format!("{} {}", tag, count);
             let colors2 = colors;
-            container(
-                button(text(label).size(11).color(colors2.text()))
-                    .on_press(Message::TagToggled(tag.clone()))
-                    .padding([1, 5])
-                    .style(btn_tag(colors2))
-            )
-            .height(15.0)
-            .width(Length::Shrink)
-            .into()
+            button(text(label).size(11).color(colors2.text()))
+                .on_press(Message::TagToggled(tag.clone()))
+                .padding([0, 4])
+                .height(14.0)
+                .style(btn_tag(colors2))
+                .into()
         })
         .collect();
 
@@ -272,7 +269,7 @@ fn view_sidebar(app: &AkTags) -> Element<'_, Message> {
             Row::with_children(tag_items).spacing(2).wrap()
         ).height(Length::Fill),
     ]
-    .spacing(2)
+    .spacing(4)
     .padding([8, 10]);
 
     let sidebar_content = column![
