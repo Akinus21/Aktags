@@ -236,7 +236,7 @@ pub fn view_taxonomy(app: &AkTags) -> Element<'_, Message> {
     cats.sort();
 
     for cat in cats {
-        let tags = &by_category[cat];
+        let tags = &by_category[&cat];
         let chips: Vec<Element<'_, Message>> = tags.iter()
             .map(|(name, meta)| taxonomy_tag_chip(name, meta, colors))
             .collect();
