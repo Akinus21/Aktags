@@ -273,7 +273,7 @@ fn view_sidebar(app: &AkTags) -> Element<'_, Message> {
         Space::with_height(12.0),
         text("Tags").size(11).color(colors.text_dim()),
         Space::with_height(8.0),
-        scrollable(wrapped_tags).height(Length::Fill),
+        wrapped_tags,
     ]
     .spacing(4)
     .padding(14)
@@ -809,41 +809,44 @@ fn wrap_tag_rows(
     if items.is_empty() {
         return Space::with_height(0.0).into();
     }
-    let mut rows: Vec<Element<'_, Message>> = Vec::new();
-    let mut current_row: Vec<Element<'_, Message>> = Vec::new();
-    let mut current_row_width: f32 = 0.0;
 
     let chip_spacing = spacing;
     let chip_min_width = 90.0;
 
+    let mut chip_rows: Vec<Vec<Element<'_, Message>>> = Vec::new();
+    let mut current_row: Vec<Element<'_, Message>> = Vec::new();
+    let mut current_row_width: f32 = 0.0;
+
     for item in items {
         if !current_row.is_empty() && current_row_width + chip_min_width > available_width {
-            rows.push(
-                Row::with_children(std::mem::take(&mut current_row))
-                    .spacing(chip_spacing)
-                    .width(Length::Fill)
-                    .into()
-            );
+            chip_rows.push(std::mem::take(&mut current_row));
             current_row_width = 0.0;
         }
-
         current_row.push(item);
         current_row_width += chip_min_width + chip_spacing;
     }
-
     if !current_row.is_empty() {
-        rows.push(
-            Row::with_children(current_row)
-                .spacing(chip_spacing)
-                .width(Length::Fill)
-                .into()
-        );
+        chip_rows.push(current_row);
     }
 
-    Column::with_children(rows)
-        .spacing(spacing)
-        .width(Length::Fill)
-        .into()
+    let rows: Vec<Element<'_, Message>> = chip_rows
+        .into_iter()
+        .map(|row_items| {
+            Row::with_children(row_items)
+                .spacing(chip_spacing)
+                .align_y(Alignment::Center)
+                .into()
+        })
+        .collect();
+
+    scrollable(
+        Column::with_children(rows)
+            .spacing(spacing)
+            .width(Length::Fill)
+            .align_x(Alignment::Start)
+    )
+    .height(Length::Fill)
+    .into()
 }
 
 fn icon_view(icon_cache: &IconCache, ext: &str, path: &str, size: u32) -> Element<'static, Message> {
