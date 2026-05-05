@@ -254,27 +254,30 @@ fn view_sidebar(app: &AkTags) -> Element<'_, Message> {
         .map(|(tag, count)| {
             let label = format!("{} {}", tag, count);
             let colors2 = colors;
-            button(text(label).size(9).color(colors2.text()))
-                .on_press(Message::TagToggled(tag.clone()))
-                .padding([0, 3])
-                .height(11.0)
-                .style(move |_, _| button::Style {
-                    background: Some(colors2.tag_bg().into()),
-                    text_color: colors2.text(),
-                    border: iced::border::Border { radius: 3.0.into(), ..Default::default() },
-                    ..Default::default()
-                })
-                .into()
+            container(
+                button(text(label).size(11).color(colors2.text()))
+                    .on_press(Message::TagToggled(tag.clone()))
+                    .padding([1, 5])
+                    .style(move |_, _| button::Style {
+                        background: Some(colors2.tag_bg().into()),
+                        text_color: colors2.text(),
+                        border: iced::border::Border { radius: 3.0.into(), ..Default::default() },
+                        ..Default::default()
+                    })
+            )
+            .height(14.0)
+            .width(Length::Shrink)
+            .into()
         })
         .collect();
 
     let tags_section = column![
         text("Tags").size(11).color(colors.text_dim()),
         scrollable(
-            Row::with_children(tag_items).spacing(1).wrap()
+            Row::with_children(tag_items).spacing(2).wrap()
         ).height(Length::Fill),
     ]
-    .spacing(2)
+    .spacing(4)
     .padding([8, 10]);
 
     let sidebar_content = column![
