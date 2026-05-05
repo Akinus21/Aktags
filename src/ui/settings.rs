@@ -1,5 +1,5 @@
 use iced::{
-    Element, Length, Theme,
+    Element, Length,
     widget::{
         button, column, container, row, scrollable, text,
         text_input, toggler, Column, Space,
@@ -258,27 +258,7 @@ pub fn view(app: &AkTags) -> Element<'_, Message> {
         stat_row("Interval".to_string(), format!("{}s", app.config.auto_update.check_interval_secs), colors),
 
         Space::with_height(8.0),
-        {
-            let label = if app.settings_auto_update_enabled {
-                "Auto-update enabled".to_string()
-            } else {
-                "Auto-update disabled".to_string()
-            };
-            let color = if app.settings_auto_update_enabled {
-                colors.green()
-            } else {
-                colors.text_dim()
-            };
-            let label_text = text(label).size(12).color(color);
-            row![
-                label_text,
-                Space::with_width(Length::Fill),
-                button(text("Upgrade Now").size(11).color(colors.accent()))
-                    .on_press(Message::BrewUpgradeNow)
-                    .padding([4, 10])
-                    .style(|_theme: &Theme, _status| button::Style::default()),
-            ].into()
-        },
+        auto_update_status_row(app.settings_auto_update_enabled, colors),
 
         Space::with_height(24.0),
 
@@ -304,27 +284,7 @@ pub fn view(app: &AkTags) -> Element<'_, Message> {
         .width(400.0),
 
         Space::with_height(8.0),
-        {
-            let status_label = if app.settings_diagnostics_enabled {
-                "Reporting enabled".to_string()
-            } else {
-                "Reporting disabled".to_string()
-            };
-            let status_color = if app.settings_diagnostics_enabled {
-                colors.green()
-            } else {
-                colors.text_dim()
-            };
-            let status_text = text(status_label).size(12).color(status_color);
-            Element::from(row![
-                status_text,
-                Space::with_width(Length::Fill),
-                button(text("Send Report Now").size(11).color(colors.accent()))
-                    .on_press(Message::SendDiagnosticsReport)
-                    .padding([4, 10])
-                    .style(|_theme: &Theme, _status| button::Style::default()),
-            ])
-        },
+        diagnostics_status_row(app.settings_diagnostics_enabled, colors),
 
         Space::with_height(24.0),
 
@@ -489,5 +449,35 @@ fn stat_row(label: String, value: String, colors: theme::ThemeColors) -> Element
         text(value).size(12).color(colors.text()),
     ]
     .spacing(8)
+    .into()
+}
+
+fn auto_update_status_row(enabled: bool, colors: theme::ThemeColors) -> Element<'static, Message> {
+    let label = if enabled { "Auto-update enabled" } else { "Auto-update disabled" };
+    let color = if enabled { colors.green() } else { colors.text_dim() };
+    row![
+        text(label).size(12).color(color),
+        Space::with_width(Length::Fill),
+        button(text("Upgrade Now").size(11).color(colors.accent()))
+            .on_press(Message::BrewUpgradeNow)
+            .padding([4, 10])
+            .style(|_theme, _status| button::Style::default()),
+    ]
+    .align_y(Alignment::Center)
+    .into()
+}
+
+fn diagnostics_status_row(enabled: bool, colors: theme::ThemeColors) -> Element<'static, Message> {
+    let label = if enabled { "Reporting enabled" } else { "Reporting disabled" };
+    let color = if enabled { colors.green() } else { colors.text_dim() };
+    row![
+        text(label).size(12).color(color),
+        Space::with_width(Length::Fill),
+        button(text("Send Report Now").size(11).color(colors.accent()))
+            .on_press(Message::SendDiagnosticsReport)
+            .padding([4, 10])
+            .style(|_theme, _status| button::Style::default()),
+    ]
+    .align_y(Alignment::Center)
     .into()
 }
