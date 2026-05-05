@@ -814,16 +814,14 @@ fn wrap_tag_rows(
     let mut current_row_width: f32 = 0.0;
 
     let chip_spacing = spacing;
-    let chip_min_width = 96.0;
+    let chip_min_width = 90.0;
 
     for item in items {
-        let would_exceed = !current_row.is_empty()
-            && current_row_width + chip_min_width > available_width;
-
-        if would_exceed {
+        if !current_row.is_empty() && current_row_width + chip_min_width > available_width {
             rows.push(
                 Row::with_children(std::mem::take(&mut current_row))
                     .spacing(chip_spacing)
+                    .width(Length::Fill)
                     .into()
             );
             current_row_width = 0.0;
@@ -837,6 +835,7 @@ fn wrap_tag_rows(
         rows.push(
             Row::with_children(current_row)
                 .spacing(chip_spacing)
+                .width(Length::Fill)
                 .into()
         );
     }
