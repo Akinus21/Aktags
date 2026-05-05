@@ -8,6 +8,7 @@ use tokio::sync::mpsc;
 use crate::config::{self, Config};
 use crate::daemon::{Daemon, DaemonStats};
 use crate::db::{self, DbPool, FileRecord, SearchFilter};
+use crate::icon::IconCache;
 use crate::taxonomy;
 use crate::ui::theme;
 use crate::updater::{UpdateStatus as UpdaterStatus, check_for_update_async};
@@ -151,6 +152,7 @@ pub struct AkTags {
     pub sync_status: SyncStatus,
     pub sort_field: SortField,
     pub sort_direction: SortDirection,
+    pub icon_cache: IconCache,
 }
 
 #[derive(Debug, Clone)]
@@ -216,6 +218,7 @@ impl AkTags {
             sync_status: SyncStatus::Idle,
             sort_field: SortField::Name,
             sort_direction: SortDirection::Ascending,
+            icon_cache: IconCache::new(),
         };
 
         let cmd = if app.panel == Panel::Browser {

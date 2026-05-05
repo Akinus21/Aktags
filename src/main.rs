@@ -3,6 +3,7 @@ mod daemon;
 mod db;
 mod extractor;
 mod graveyard;
+mod icon;
 mod tagger;
 mod taxonomy;
 mod ui;

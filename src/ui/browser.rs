@@ -1,7 +1,7 @@
 use iced::{
     widget::{
-        button, column, container, horizontal_rule, row, scrollable,
-        text, text_input, Column, Row, Space,
+        button, column, container, horizontal_rule, image::Image as IcedImage,
+        row, scrollable, text, text_input, Column, Row, Space,
     },
     Alignment, Border, Color, Element, Length,
 };
@@ -9,6 +9,7 @@ use iced::{
 use super::app::{AkTags, Message, Panel, ViewMode};
 use super::theme::{self, ThemeColors, PADDING, DETAIL_W, HEADER_H, SIDEBAR_W, SPACING, CARD_W, CARD_H};
 use crate::db::FileRecord;
+use crate::icon::{IconCache, load_icon_for_ext, load_thumbnail_for_path, is_image_file};
 
 // ── Theme-aware style helpers ─────────────────────────────────────────────────
 
@@ -424,10 +425,11 @@ fn view_grid(app: &AkTags) -> Element<'_, Message> {
 
     let selected_id = app.selected_file.as_ref().map(|s| s.id);
     let files = &app.files;
+    let icon_cache = &app.icon_cache;
     let mut rows: Vec<Element<'_, Message>> = Vec::new();
     for chunk in files.chunks(4) {
         let row_items: Vec<Element<'_, Message>> = chunk.iter()
-            .map(|f| file_card(f, app.theme_type, selected_id == Some(f.id)))
+            .map(|f| file_card(f, app.theme_type, selected_id == Some(f.id), icon_cache))
             .collect();
         rows.push(
             Row::with_children(row_items)
@@ -446,9 +448,14 @@ fn view_grid(app: &AkTags) -> Element<'_, Message> {
     .into()
 }
 
-fn file_card(file: &FileRecord, theme_type: theme::ThemeType, selected: bool) -> Element<'_, Message> {
+fn file_card(
+    file: &FileRecord,
+    theme_type: theme::ThemeType,
+    selected: bool,
+    icon_cache: &IconCache,
+) -> Element<'_, Message> {
     let colors = theme::default_colors(theme_type);
-    let icon = file_type_icon(&file.extension);
+    let icon_elem = icon_view(icon_cache, &file.extension, &file.path, 48);
     let name = truncate(&file.filename, 22);
     let summary = file.summary.as_deref().unwrap_or("").to_string();
     let summary_short = truncate(&summary, 50);
@@ -464,7 +471,7 @@ fn file_card(file: &FileRecord, theme_type: theme::ThemeType, selected: bool) ->
         .collect();
 
     let card_content = column![
-        text(icon).size(32),
+        icon_elem,
         Space::with_height(8.0),
         text(name).size(12).color(colors.text()),
         text(summary_short).size(11).color(colors.text_dim()),
@@ -539,8 +546,9 @@ fn view_list(app: &AkTags) -> Element<'_, Message> {
         .width(Length::Fill)
         .style(bg_style(colors.surface2()));
 
+    let icon_cache = &app.icon_cache;
     let rows: Vec<Element<'_, Message>> = app.files.iter()
-        .map(|f| file_row(f, app.theme_type, selected_id == Some(f.id)))
+        .map(|f| file_row(f, app.theme_type, selected_id == Some(f.id), icon_cache))
         .collect();
 
     column![
@@ -589,9 +597,14 @@ fn sort_header<'a>(
         .into()
 }
 
-fn file_row(file: &FileRecord, theme_type: theme::ThemeType, selected: bool) -> Element<'_, Message> {
+fn file_row(
+    file: &FileRecord,
+    theme_type: theme::ThemeType,
+    selected: bool,
+    icon_cache: &IconCache,
+) -> Element<'_, Message> {
     let colors = theme::default_colors(theme_type);
-    let icon = file_type_icon(&file.extension);
+    let icon_elem = icon_view(icon_cache, &file.extension, &file.path, 18);
     let tags: Vec<Element<'_, Message>> = file.tags.iter().take(4)
         .map(|t| {
             button(text(t).size(11).color(colors.text()))
@@ -603,7 +616,7 @@ fn file_row(file: &FileRecord, theme_type: theme::ThemeType, selected: bool) -> 
         .collect();
 
     let row_content = row![
-        text(icon).size(18).width(30.0),
+        icon_elem.width(Length::Units(30)),
         column![
             text(&file.filename).size(13).color(colors.text()),
             text(file.summary.as_deref().unwrap_or("")).size(11)
@@ -685,7 +698,7 @@ fn view_detail(app: &AkTags) -> Element<'_, Message> {
         Space::with_height(12.0),
 
         // File icon + name
-        text(file_type_icon(&file.extension)).size(40),
+        icon_view(&app.icon_cache, &file.extension, &file.path, 40),
         text(&file.filename).size(14).color(colors.text()),
         text(&file.category).size(11).color(colors.text_dim()),
         Space::with_height(4.0),
@@ -801,13 +814,13 @@ fn wrap_tag_rows(
     let mut current_row_width: f32 = 0.0;
 
     let chip_spacing = spacing;
-    let chip_padding = 16.0; // [3,8] * 2
+    let chip_min_width = 96.0;
 
     for item in items {
-        current_row.push(item);
-        current_row_width += 80.0 + chip_spacing + chip_padding; // rough estimate per tag
+        let would_exceed = !current_row.is_empty()
+            && current_row_width + chip_min_width > available_width;
 
-        if current_row_width >= available_width && !rows.is_empty() {
+        if would_exceed {
             rows.push(
                 Row::with_children(std::mem::take(&mut current_row))
                     .spacing(chip_spacing)
@@ -815,6 +828,9 @@ fn wrap_tag_rows(
             );
             current_row_width = 0.0;
         }
+
+        current_row.push(item);
+        current_row_width += chip_min_width + chip_spacing;
     }
 
     if !current_row.is_empty() {
@@ -829,4 +845,38 @@ fn wrap_tag_rows(
         .spacing(spacing)
         .width(Length::Fill)
         .into()
+}
+
+fn icon_view(icon_cache: &IconCache, ext: &str, path: &str, size: u32) -> Element<'static, Message> {
+    let ext_lower = ext.to_lowercase();
+
+    if is_image_file(ext) {
+        if let Some(cached) = icon_cache.get_path(path) {
+            return IcedImage::new(iced::widget::image::Handle::from_pixels(
+                cached.width, cached.height, (*cached.rgba).clone(),
+            )).width(Length::Units(size)).into();
+        }
+        if let Some(icon) = load_thumbnail_for_path(path, size) {
+            let elem = IcedImage::new(iced::widget::image::Handle::from_pixels(
+                icon.width, icon.height, (*icon.rgba).clone(),
+            )).width(Length::Units(size)).into();
+            return elem;
+        }
+    }
+
+    if let Some(cached) = icon_cache.get_ext(ext) {
+        return IcedImage::new(iced::widget::image::Handle::from_pixels(
+            cached.width, cached.height, (*cached.rgba).clone(),
+        )).width(Length::Units(size)).into();
+    }
+
+    if let Some(icon) = load_icon_for_ext(ext) {
+        let elem = IcedImage::new(iced::widget::image::Handle::from_pixels(
+            icon.width, icon.height, (*icon.rgba).clone(),
+        )).width(Length::Units(size)).into();
+        return elem;
+    }
+
+    let fallback = file_type_icon(ext);
+    text(fallback).size(size).into()
 }
