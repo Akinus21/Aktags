@@ -73,9 +73,7 @@ fn init_schema(pool: &DbPool) -> Result<()> {
             tagged_at   TEXT,
             modified_at TEXT,
             indexed_at  TEXT DEFAULT (datetime('now')),
-            error       TEXT,
-            synced_at   TEXT,
-            synced_hash TEXT
+            error       TEXT
         );
 
         CREATE TABLE IF NOT EXISTS tag_index (
