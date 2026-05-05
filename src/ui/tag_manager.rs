@@ -236,7 +236,7 @@ pub fn view_taxonomy(app: &AkTags) -> Element<'_, Message> {
     cats.sort();
 
     for cat in cats {
-        let tags = by_category.get(&cat).unwrap_or(&vec![]);
+        let tags = &by_category[cat];
         let chips: Vec<Element<'_, Message>> = tags.iter()
             .map(|(name, meta)| taxonomy_tag_chip(name, meta, colors))
             .collect();
@@ -352,7 +352,7 @@ fn taxonomy_tag_chip<'a>(
             button(text("×").size(12).color(colors.red()))
                 .on_press(Message::RemoveTaxonomyTag(name_owned))
                 .padding([1, 4])
-                .style(|_t, _s| button::Style {
+                .style(move |_t, _s| button::Style {
                     background: None,
                     text_color: colors.red(),
                     ..Default::default()
