@@ -1,6 +1,5 @@
 use image::DynamicImage;
 use std::collections::HashMap;
-use std::path::Path;
 use std::sync::Arc;
 
 #[derive(Debug, Clone)]
@@ -22,7 +21,7 @@ impl IconData {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct IconCache {
     by_ext: HashMap<String, IconData>,
     by_path: HashMap<String, IconData>,

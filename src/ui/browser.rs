@@ -453,7 +453,7 @@ fn file_card(
     theme_type: theme::ThemeType,
     selected: bool,
     icon_cache: &IconCache,
-) -> Element<'_, Message> {
+) -> Element<Message> {
     let colors = theme::default_colors(theme_type);
     let icon_elem = icon_view(icon_cache, &file.extension, &file.path, 48);
     let name = truncate(&file.filename, 22);
@@ -602,7 +602,7 @@ fn file_row(
     theme_type: theme::ThemeType,
     selected: bool,
     icon_cache: &IconCache,
-) -> Element<'_, Message> {
+) -> Element<Message> {
     let colors = theme::default_colors(theme_type);
     let icon_elem = icon_view(icon_cache, &file.extension, &file.path, 18);
     let tags: Vec<Element<'_, Message>> = file.tags.iter().take(4)
@@ -616,7 +616,7 @@ fn file_row(
         .collect();
 
     let row_content = row![
-        icon_elem.width(Length::Units(30)),
+        container(icon_elem).width(Length::Pixels(30)),
         column![
             text(&file.filename).size(13).color(colors.text()),
             text(file.summary.as_deref().unwrap_or("")).size(11)
@@ -854,28 +854,28 @@ fn icon_view(icon_cache: &IconCache, ext: &str, path: &str, size: u32) -> Elemen
 
     if is_image_file(ext) {
         if let Some(cached) = icon_cache.get_path(path) {
-            return IcedImage::new(iced::widget::image::Handle::from_pixels(
+            return IcedImage::new(iced::widget::image::Handle::from_rgba(
                 cached.width, cached.height, (*cached.rgba).clone(),
-            )).width(Length::Units(size)).into();
+            )).width(Length::Pixels(size)).into();
         }
         if let Some(icon) = load_thumbnail_for_path(path, size) {
-            let elem = IcedImage::new(iced::widget::image::Handle::from_pixels(
+            let elem = IcedImage::new(iced::widget::image::Handle::from_rgba(
                 icon.width, icon.height, (*icon.rgba).clone(),
-            )).width(Length::Units(size)).into();
+            )).width(Length::Pixels(size)).into();
             return elem;
         }
     }
 
     if let Some(cached) = icon_cache.get_ext(ext) {
-        return IcedImage::new(iced::widget::image::Handle::from_pixels(
+        return IcedImage::new(iced::widget::image::Handle::from_rgba(
             cached.width, cached.height, (*cached.rgba).clone(),
-        )).width(Length::Units(size)).into();
+        )).width(Length::Pixels(size)).into();
     }
 
     if let Some(icon) = load_icon_for_ext(ext) {
-        let elem = IcedImage::new(iced::widget::image::Handle::from_pixels(
+        let elem = IcedImage::new(iced::widget::image::Handle::from_rgba(
             icon.width, icon.height, (*icon.rgba).clone(),
-        )).width(Length::Units(size)).into();
+        )).width(Length::Pixels(size)).into();
         return elem;
     }
 
