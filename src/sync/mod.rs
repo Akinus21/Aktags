@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use tracing::{error, info, warn};
+use std::path::PathBuf;
 
 use crate::config::CloudConfig;
 use crate::db::DbPool;
@@ -9,12 +10,17 @@ pub mod discovery;
 pub mod identity;
 
 /// Run a full sync cycle against AKCloud.
-pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::sync::identity::Identity) -> Result<()> {
+pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::sync::identity::Identity, watch_dirs: &[PathBuf]) -> Result<()> {
     if !config.enabled {
         return Ok(());
     }
     let base = config.url.trim_end_matches('/');
     let api_key = &config.api_key;
+
+    // Use first watch directory as sync root
+    let sync_root = watch_dirs.first()
+        .cloned()
+        .unwrap_or_else(|| dirs::home_dir().unwrap_or_default().join("Documents"));
 
     let http = client::new_client(api_key)?;
 
@@ -112,7 +118,7 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
         // Use server's path as-is (server stores relative paths in manifest)
         let remote_path = entry.path.as_str();
         // Map to local watch directory for download destination
-        let local_path = shellexpand::tilde(&entry.path).to_string();
+        let local_path = sync_root.join(&entry.path).to_string_lossy().to_string();
         match client::download_file(&http, base, remote_path, &local_path).await {
             Ok(()) => {
                 info!("[sync] downloaded {}", entry.path);
@@ -154,7 +160,7 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
             }
         } else {
             // Server wins → download (before overwriting local file, entomb local copy)
-            let local_disk = shellexpand::tilde(&local.path).to_string();
+            let local_disk = sync_root.join(&local.path).to_string_lossy().to_string();
             let pool = pool.clone();
             // Entomb local losing copy
             let _ = crate::graveyard::entomb(

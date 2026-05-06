@@ -192,7 +192,7 @@ impl Daemon {
                             FileEvent::Process(path) => {
                                 process_file(&path, &cfg, &pool, &client, &stats).await;
                                 if cfg.cloud.enabled && cfg.cloud.sync_on_file_change {
-                                    trigger_sync(&cfg.cloud, &pool).await;
+                                    trigger_sync(&cfg.cloud, &pool, &cfg.watch_dirs).await;
                                 }
                             }
                             FileEvent::Delete(path) => {
@@ -229,7 +229,7 @@ impl Daemon {
                         if cfg.cloud.enabled {
                             let interval = Duration::from_secs(cfg.cloud.sync_interval_secs);
                             if now.duration_since(last_sync) >= interval {
-                                trigger_sync(&cfg.cloud, &pool).await;
+                                trigger_sync(&cfg.cloud, &pool, &cfg.watch_dirs).await;
                                 last_sync = now;
                             }
                         }
@@ -365,10 +365,10 @@ async fn process_file(
     stats.lock().unwrap().queue_size = 0;
 }
 
-async fn trigger_sync(cloud: &crate::config::CloudConfig, pool: &DbPool) {
+async fn trigger_sync(cloud: &crate::config::CloudConfig, pool: &DbPool, watch_dirs: &[PathBuf]) {
     match crate::sync::identity::load_identity() {
         Ok(identity) => {
-            if let Err(e) = crate::sync::run_sync(cloud, pool, &identity).await {
+            if let Err(e) = crate::sync::run_sync(cloud, pool, &identity, watch_dirs).await {
                 warn!("Background sync failed: {e}");
             } else {
                 info!("Background sync completed");

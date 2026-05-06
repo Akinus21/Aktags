@@ -599,11 +599,12 @@ impl AkTags {
                 self.sync_status = SyncStatus::Connecting;
                 let cfg = self.config.cloud.clone();
                 let pool = self.pool.clone();
+                let watch_dirs = self.config.watch_dirs.clone();
                 return Task::perform(async move {
                     if cfg.enabled {
                         match crate::sync::identity::load_identity() {
                             Ok(identity) => {
-                                match crate::sync::run_sync(&cfg, &pool, &identity).await {
+                                match crate::sync::run_sync(&cfg, &pool, &identity, &watch_dirs).await {
                                     Ok(()) => Message::SyncComplete,
                                     Err(_e) => Message::SyncComplete,
                                 }
