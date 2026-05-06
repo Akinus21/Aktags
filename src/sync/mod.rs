@@ -207,19 +207,26 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
     }
 
     // 6. PROPAGATE DELETES — delete files that were removed locally
-    for path in delete_paths {
-        info!("[sync] deleting file on server: {}", path);
-        match client::delete_file(&http, base, &path).await {
+    for abs_path in delete_paths {
+        // Convert absolute path to relative for server
+        let rel_path = std::path::Path::new(&abs_path)
+            .strip_prefix(&sync_root)
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or_else(|_| abs_path.clone());
+
+        info!("[sync] deleting file on server: {}", rel_path);
+        match client::delete_file(&http, base, &rel_path).await {
             Ok(()) => {
-                info!("[sync] deleted {}", path);
-                // Clean up local DB record (file already deleted from disk)
-                let pool = pool.clone();
-                tokio::task::block_in_place(|| {
-                    let _ = crate::db::remove_file(&pool, &path);
-                });
+                info!("[sync] deleted {}", rel_path);
+                // Record stays soft-deleted in DB (deleted_at is already set)
             }
             Err(e) => {
-                error!("[sync] delete failed for {}: {}", path, e);
+                // 404 = file already gone on server, treat as success
+                if e.to_string().contains("404") {
+                    info!("[sync] file already deleted on server: {}", rel_path);
+                } else {
+                    error!("[sync] delete failed for {}: {}", abs_path, e);
+                }
             }
         }
     }
