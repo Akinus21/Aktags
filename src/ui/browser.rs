@@ -7,7 +7,7 @@ use iced::{
 };
 
 use super::app::{AkTags, Message, Panel};
-use super::theme::{self, ThemeColors, PADDING, DETAIL_W, HEADER_H, SIDEBAR_W, SPACING};
+use super::theme::{self, ThemeColors, DETAIL_W, HEADER_H, SIDEBAR_W};
 use crate::db::FileRecord;
 use crate::icon::{IconCache, load_icon_for_ext, load_thumbnail_for_path, is_image_file};
 
@@ -438,11 +438,10 @@ fn view_card(app: &AkTags) -> Element<'_, Message> {
         return empty_state("No files found", "Try adjusting your search or filters.", app.theme_type);
     }
 
-    let colors = theme::default_colors(app.theme_type);
     let selected_id = app.selected_file.as_ref().map(|s| s.id);
     let icon_cache = &app.icon_cache;
 
-    let mut cards: Vec<_> = app.files.iter()
+    let cards: Vec<_> = app.files.iter()
         .map(|f| file_card_horizontal(f, app.theme_type, selected_id == Some(f.id), icon_cache))
         .collect();
 

@@ -1,7 +1,6 @@
 use anyhow::Result;
 use crossbeam_channel::{bounded, Sender};
 use notify::{Config as NotifyConfig, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
-use rusqlite::params;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 

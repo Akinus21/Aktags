@@ -1,8 +1,9 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::collections::HashSet;
 
-use crate::config::{taxonomy_path, pending_path};
+use crate::config::{taxonomy_path, pending_path, rejected_path};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TagMeta {
@@ -100,6 +101,9 @@ pub fn resolve_tags(
     let mut new_tags = Vec::new();
 
     for tag in ai_tags {
+        if is_rejected(tag) {
+            continue;
+        }
         if let Some(canonical) = normalize_tag(tag, tax) {
             if !approved.contains(&canonical) {
                 approved.push(canonical);
@@ -173,6 +177,47 @@ pub fn merge_pending(tag: &str, into: &str) -> Result<()> {
 
 pub fn pending_count() -> usize {
     load_pending().len()
+}
+
+// ── Rejected tags (tags the user has explicitly rejected) ────────────────────
+
+pub fn load_rejected() -> HashSet<String> {
+    let path = rejected_path();
+    if path.exists() {
+        std::fs::read_to_string(&path)
+            .ok()
+            .and_then(|s| serde_json::from_str(&s).ok())
+            .unwrap_or_default()
+    } else {
+        HashSet::new()
+    }
+}
+
+fn save_rejected(rejected: &HashSet<String>) -> Result<()> {
+    let path = rejected_path();
+    std::fs::create_dir_all(path.parent().unwrap())?;
+    std::fs::write(&path, serde_json::to_string_pretty(rejected)?)?;
+    Ok(())
+}
+
+pub fn add_rejected(tag: &str) -> Result<()> {
+    let mut rejected = load_rejected();
+    rejected.insert(tag.to_lowercase());
+    save_rejected(&rejected)
+}
+
+pub fn remove_rejected(tag: &str) -> Result<()> {
+    let mut rejected = load_rejected();
+    rejected.remove(&tag.to_lowercase());
+    save_rejected(&rejected)
+}
+
+pub fn clear_rejected() -> Result<()> {
+    save_rejected(&HashSet::new())
+}
+
+pub fn is_rejected(tag: &str) -> bool {
+    load_rejected().contains(&tag.to_lowercase())
 }
 
 // ── Default taxonomy seed ─────────────────────────────────────────────────────
