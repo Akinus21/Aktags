@@ -459,7 +459,7 @@ fn file_card_horizontal<'a>(
     file: &'a FileRecord,
     theme_type: theme::ThemeType,
     selected: bool,
-    icon_cache: &'a IconCache,
+    _icon_cache: &'a IconCache,
 ) -> Element<'a, Message> {
     let colors = theme::default_colors(theme_type);
     let name = truncate(&file.filename, 60);

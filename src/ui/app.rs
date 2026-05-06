@@ -29,6 +29,7 @@ pub enum Panel {
     Browser,
     Pending,
     Taxonomy,
+    Rejected,
     Settings,
     FirstRun,
 }
@@ -282,6 +283,7 @@ impl AkTags {
                 return match panel {
                     Panel::Pending  => self.load_pending(),
                     Panel::Taxonomy => self.load_taxonomy(),
+                    Panel::Rejected => self.load_rejected(),
                     Panel::Browser  => self.refresh_all(),
                     _ => Task::none(),
                 };
@@ -458,6 +460,15 @@ impl AkTags {
             }
 
             Message::TaxonomyLoaded(tax) => { self.taxonomy = tax; }
+            Message::RejectedLoaded(tags) => { self.rejected_tags = tags; }
+            Message::UnrejectTag(tag) => {
+                let _ = taxonomy::remove_rejected(&tag);
+                return self.load_rejected();
+            }
+            Message::ClearRejectedTags => {
+                let _ = taxonomy::clear_rejected();
+                return self.load_rejected();
+            }
             Message::NewTagNameChanged(s)     => { self.new_tag_name = s; }
             Message::NewTagCategoryChanged(s) => { self.new_tag_category = s; }
             Message::NewTagAliasesChanged(s)  => { self.new_tag_aliases = s; }
@@ -779,6 +790,14 @@ impl AkTags {
             items.sort_by(|a, b| a.0.cmp(&b.0));
             items
         }, Message::TaxonomyLoaded)
+    }
+
+    pub fn load_rejected(&self) -> Task<Message> {
+        Task::perform(async {
+            let mut tags: Vec<String> = taxonomy::load_rejected().into_iter().collect();
+            tags.sort();
+            tags
+        }, Message::RejectedLoaded)
     }
 
     pub fn refresh_daemon_stats(&self) -> Task<Message> {

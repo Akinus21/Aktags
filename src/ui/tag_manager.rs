@@ -166,6 +166,90 @@ fn pending_card<'a>(
     .into()
 }
 
+// ── Rejected tags panel ────────────────────────────────────────────────────────
+
+pub fn view_rejected(app: &AkTags) -> Element<'_, Message> {
+    let colors = theme::default_colors(app.theme_type);
+
+    let top_row = row![
+        btn_plain("<- Back")
+            .on_press(Message::SwitchPanel(Panel::Browser)),
+        Space::with_width(12.0),
+        text("Rejected Tags").size(16).color(colors.accent2()),
+        Space::with_width(Length::Fill),
+        if !app.rejected_tags.is_empty() {
+            btn_plain("Clear All")
+                .on_press(Message::ClearRejectedTags)
+                .style(move |_, _| button::Style {
+                    background: Some(colors.red().into()),
+                    text_color: colors.bg(),
+                    ..Default::default()
+                })
+                .into()
+        } else {
+            Space::new(0.0, 0.0).into()
+        },
+    ]
+    .align_y(Alignment::Center)
+    .padding([8, 12]);
+
+    if app.rejected_tags.is_empty() {
+        return column![
+            top_row,
+            Space::with_height(20.0),
+            container(
+                text("No rejected tags.").size(14).color(colors.text_dim())
+            )
+            .width(Length::Fill)
+            .center_x(Length::Fill),
+        ]
+        .width(Length::Fill)
+        .into();
+    }
+
+    let chips: Vec<Element<'_, Message>> = app.rejected_tags.iter()
+        .map(|tag| {
+            let tag_owned = tag.clone();
+            row![
+                button(text(tag).size(12).color(colors.text()))
+                    .padding([4, 8])
+                    .style(move |_, _| button::Style {
+                        background: Some(colors.tag_bg().into()),
+                        text_color: colors.text(),
+                        border: Default::default(),
+                    }),
+                Space::with_width(4.0),
+                button(text("×").size(12).color(colors.text_dim()))
+                    .padding([4, 6])
+                    .on_press(Message::UnrejectTag(tag_owned.clone()))
+                    .style(move |_, _| button::Style {
+                        background: Some(colors.surface2().into()),
+                        text_color: colors.text_dim(),
+                        ..Default::default()
+                    }),
+            ]
+            .spacing(2)
+            .into()
+        })
+        .collect();
+
+    column![
+        top_row,
+        Space::with_height(12.0),
+        scrollable(
+            container(
+                scrollable(
+                    Row::with_children(chips).spacing(8).wrap()
+                )
+            )
+            .padding([0, 12])
+        )
+        .height(Length::Fill),
+    ]
+    .width(Length::Fill)
+    .into()
+}
+
 // ── Taxonomy panel ────────────────────────────────────────────────────────────
 
 pub fn view_taxonomy(app: &AkTags) -> Element<'_, Message> {
