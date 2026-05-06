@@ -270,9 +270,11 @@ fn view_sidebar(app: &AkTags) -> Element<'_, Message> {
     let tags_section = column![
         text("Tags").size(11).color(colors.text_dim()),
         Space::with_height(4.0),
-        scrollable(
+        container(
             Row::with_children(tag_items).spacing(4).wrap()
-        ).height(Length::Fill),
+        )
+        .width(Length::Fill)
+        .height(Length::Fill),
     ]
     .spacing(0)
     .padding([8, 10]);
