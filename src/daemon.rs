@@ -1,6 +1,7 @@
 use anyhow::Result;
 use crossbeam_channel::{bounded, Sender};
 use notify::{Config as NotifyConfig, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
+use rusqlite::params;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
@@ -149,16 +150,22 @@ impl Daemon {
                 {
                     let conn = scan_pool.get().ok();
                     if let Some(conn) = conn {
-                        let mut stmt = conn.prepare("SELECT id, path FROM files WHERE deleted_at IS NULL").ok();
-                        if let Some(mut stmt) = stmt {
-                            let records: Vec<(i64, String)> = stmt.query_map([], |row| {
-                                Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?))
-                            }).filter_map(|r| r.ok()).collect();
-                            for (id, path) in records {
-                                if !std::path::Path::new(&path).exists() {
-                                    conn.execute("UPDATE files SET deleted_at=datetime('now') WHERE id=?", params![id]).ok();
-                                    info!("Cleaned up orphan: {}", path);
-                                }
+                        let records: Vec<(i64, String)> = conn
+                            .prepare("SELECT id, path FROM files WHERE deleted_at IS NULL")
+                            .and_then(|mut stmt| {
+                                let rows = stmt.query_map([], |row| {
+                                    Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?))
+                                })?;
+                                Ok(rows.filter_map(|r| r.ok()).collect())
+                            })
+                            .unwrap_or_default();
+                        for (id, path) in records {
+                            if !std::path::Path::new(&path).exists() {
+                                conn.execute(
+                                    "UPDATE files SET deleted_at=datetime('now') WHERE id=?",
+                                    rusqlite::params![id],
+                                ).ok();
+                                info!("Cleaned up orphan: {}", path);
                             }
                         }
                     }
