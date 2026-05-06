@@ -93,9 +93,14 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
         let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
         for r in rows {
             if let Ok(path) = r {
-                // If deleted_at is set, the file was intentionally deleted locally
-                // Propagate the deletion to server regardless of whether local file exists
-                delete_paths.push(path);
+                // Skip if already scheduled for upload (upload wins)
+                let relative = std::path::Path::new(&path)
+                    .strip_prefix(&sync_root)
+                    .map(|p| p.to_string_lossy().to_string())
+                    .unwrap_or_else(|_| path.clone());
+                if !uploads.iter().any(|e| e.path == relative) {
+                    delete_paths.push(path);
+                }
             }
         }
     }

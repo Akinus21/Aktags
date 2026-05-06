@@ -152,6 +152,7 @@ pub fn approve_pending(tag: &str, category: &str) -> Result<()> {
 pub fn reject_pending(tag: &str) -> Result<()> {
     let mut pending = load_pending();
     pending.remove(tag);
+    add_rejected(tag)?;
     save_pending(&pending)
 }
 

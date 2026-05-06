@@ -241,7 +241,7 @@ pub fn mark_synced(pool: &DbPool, path: &str, hash: &str) -> Result<()> {
     let conn = pool.get()?;
     let now = Utc::now().to_rfc3339();
     conn.execute(
-        "UPDATE files SET synced_at=?, synced_hash=? WHERE path=?",
+        "UPDATE files SET synced_at=?, synced_hash=?, deleted_at=NULL WHERE path=?",
         params![now, hash, path],
     )?;
     Ok(())

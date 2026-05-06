@@ -211,6 +211,10 @@ pub fn pending_path() -> PathBuf {
     config_dir().join("pending.json")
 }
 
+pub fn rejected_path() -> PathBuf {
+    config_dir().join("rejected.json")
+}
+
 pub fn load() -> Result<Config> {
     let path = config_path();
 
