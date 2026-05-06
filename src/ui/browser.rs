@@ -269,7 +269,7 @@ fn view_sidebar(app: &AkTags) -> Element<'_, Message> {
                     ..Default::default()
                 })
             )
-            .height(13.0)
+            .height(Length::Shrink)
             .width(Length::Shrink)
             .into()
         })
@@ -279,7 +279,7 @@ fn view_sidebar(app: &AkTags) -> Element<'_, Message> {
         text("Tags").size(11).color(colors.text_dim()),
         Space::with_height(4.0),
         scrollable(
-            Row::with_children(tag_items).spacing(2).wrap()
+            Row::with_children(tag_items).spacing(4).wrap()
         ).height(Length::Fill),
     ]
     .spacing(0)
