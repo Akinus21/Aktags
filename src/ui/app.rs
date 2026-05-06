@@ -112,7 +112,8 @@ pub enum Message {
     DeleteFile(i64),
     ImportFile,
     SaveFileAs(i64),
-    SaveFileWithTags(String, Vec<String>),
+    SavePathChosen(Option<String>),
+    FileSaved(bool),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -730,6 +731,98 @@ impl AkTags {
                     self.selected_file = None;
                     return self.refresh_all();
                 }
+            }
+
+            Message::ImportFile => {
+                return Task::perform(async move {
+                    let file_path = rfd::FileDialog::new()
+                        .pick_file()
+                        .map(|p| p.to_string_lossy().to_string());
+                    Message::FilePicked(file_path)
+                }, |r| r);
+            }
+
+            Message::FilePicked(path_opt) => {
+                if let Some(path) = path_opt {
+                    if let Some(dest) = self.config.watch_dirs.first() {
+                        let file_name = std::path::Path::new(&path)
+                            .file_name()
+                            .map(|n| n.to_string_lossy().to_string())
+                            .unwrap_or_else(|| "imported_file".to_string());
+                        let dest_path = dest.join(&file_name);
+                        let pool = self.pool.clone();
+                        let dest_path_str = dest_path.to_string_lossy().to_string();
+                        return Task::perform(
+                            async move {
+                                if let Err(e) = tokio::fs::copy(&path, &dest_path).await {
+                                    tracing::error!("Failed to import file: {}", e);
+                                    return false;
+                                }
+                                db::scan_and_index(&pool, &dest_path_str).is_ok()
+                            },
+                            Message::FileImported,
+                        );
+                    }
+                }
+            }
+
+            Message::FileImported(ok) => {
+                self.status_message = Some(
+                    if ok { "File imported".into() } else { "Import failed".into() }
+                );
+                return self.refresh_all();
+            }
+
+            Message::SaveFileAs(file_id) => {
+                if let Some(file) = self.files.iter().find(|f| f.id == file_id) {
+                    self.save_file_id = Some(file_id);
+                    self.save_selected_tags = file.tags.clone();
+                    let file_name = file.filename.clone();
+                    return Task::perform(async move {
+                        let dest = rfd::FileDialog::new()
+                            .set_file_name(&file_name)
+                            .save_file();
+                        Message::SavePathChosen(dest.map(|p| p.to_string_lossy().to_string()))
+                    }, |r| r);
+                }
+                Task::none()
+            }
+
+            Message::SavePathChosen(dest_opt) => {
+                if let Some(dest) = dest_opt {
+                    if let Some(file_id) = self.save_file_id {
+                        if let Some(file) = self.files.iter().find(|f| f.id == file_id) {
+                            let pool = self.pool.clone();
+                            let source_path = file.path.clone();
+                            let tags = self.save_selected_tags.clone();
+                            return Task::perform(
+                                async move {
+                                    if let Err(e) = tokio::fs::copy(&source_path, &dest).await {
+                                        tracing::error!("Failed to save file: {}", e);
+                                        return false;
+                                    }
+                                    for tag in &tags {
+                                        let _ = db::tag_file(&pool, file_id, tag);
+                                    }
+                                    true
+                                },
+                                Message::FileSaved,
+                            );
+                        }
+                    }
+                }
+                self.save_file_id = None;
+                self.save_selected_tags.clear();
+                Task::none()
+            }
+
+            Message::FileSaved(ok) => {
+                self.save_file_id = None;
+                self.save_selected_tags.clear();
+                self.status_message = Some(
+                    if ok { "File saved with tags".into() } else { "Save failed".into() }
+                );
+                Task::none()
             }
 
             Message::AddTagToFile(..) => {}
