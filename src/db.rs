@@ -73,7 +73,8 @@ fn init_schema(pool: &DbPool) -> Result<()> {
             tagged_at   TEXT,
             modified_at TEXT,
             indexed_at  TEXT DEFAULT (datetime('now')),
-            error       TEXT
+            error       TEXT,
+            deleted_at  TEXT DEFAULT NULL
         );
 
         CREATE TABLE IF NOT EXISTS tag_index (
@@ -126,6 +127,10 @@ fn migrate_synced_cols(conn: &rusqlite::Connection) -> Result<()> {
 
     if !columns.iter().any(|c| c == "synced_hash") {
         conn.execute("ALTER TABLE files ADD COLUMN synced_hash TEXT", [])?;
+    }
+
+    if !columns.iter().any(|c| c == "deleted_at") {
+        conn.execute("ALTER TABLE files ADD COLUMN deleted_at TEXT DEFAULT NULL", [])?;
     }
 
     Ok(())
@@ -247,6 +252,16 @@ pub fn remove_file(pool: &DbPool, path: &str) -> Result<()> {
     Ok(())
 }
 
+pub fn soft_delete_file(pool: &DbPool, path: &str) -> Result<()> {
+    let conn = pool.get()?;
+    let now = Utc::now().to_rfc3339();
+    conn.execute(
+        "UPDATE files SET deleted_at=? WHERE path=?",
+        params![now, path],
+    )?;
+    Ok(())
+}
+
 pub fn search_files(pool: &DbPool, filter: &SearchFilter) -> Result<Vec<FileRecord>> {
     let conn = pool.get()?;
 
@@ -262,7 +277,7 @@ pub fn search_files(pool: &DbPool, filter: &SearchFilter) -> Result<Vec<FileReco
                        f.summary, f.tags, f.tagged_at, f.size_bytes, f.error
                 FROM files_fts fts
                 JOIN files f ON fts.rowid = f.id
-                WHERE files_fts MATCH ?1
+                WHERE files_fts MATCH ?1 AND f.deleted_at IS NULL
             "#);
         }
     }
@@ -271,7 +286,7 @@ pub fn search_files(pool: &DbPool, filter: &SearchFilter) -> Result<Vec<FileReco
         sql = r#"
             SELECT id, path, filename, extension, category,
                    summary, tags, tagged_at, size_bytes, error
-            FROM files WHERE 1=1
+            FROM files WHERE deleted_at IS NULL
         "#.to_string();
 
         if !filter.tags.is_empty() {

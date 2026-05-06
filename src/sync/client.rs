@@ -58,7 +58,8 @@ pub struct ManifestEntry {
 }
 
 /// Build local manifest from DB (only synced files).
-pub async fn build_local_manifest(pool: &DbPool) -> Result<Vec<ManifestEntry>> {
+/// Returns relative paths by stripping the sync_root prefix.
+pub async fn build_local_manifest(pool: &DbPool, sync_root: &PathBuf) -> Result<Vec<ManifestEntry>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare(
         "SELECT path, synced_hash, modified_at, size_bytes FROM files WHERE synced_hash IS NOT NULL"
@@ -76,7 +77,12 @@ pub async fn build_local_manifest(pool: &DbPool) -> Result<Vec<ManifestEntry>> {
     })?;
     let mut entries = Vec::new();
     for r in rows {
-        entries.push(r?);
+        let mut entry = r?;
+        // Convert absolute path to relative for server compatibility
+        if let Ok(rel) = std::path::Path::new(&entry.path).strip_prefix(sync_root) {
+            entry.path = rel.to_string_lossy().to_string();
+        }
+        entries.push(entry);
     }
     Ok(entries)
 }
@@ -169,6 +175,25 @@ pub async fn download_file(
         return Err(anyhow!("Download failed: HTTP {}", resp.status()));
     }
     let bytes = resp.bytes().await?;
+    // Ensure parent directory exists before writing
+    if let Some(parent) = std::path::Path::new(local_path).parent() {
+        tokio::fs::create_dir_all(parent).await.ok();
+    }
     tokio::fs::write(local_path, &bytes).await?;
+    Ok(())
+}
+
+/// Delete a file on the remote server by path.
+pub async fn delete_file(
+    client: &reqwest::Client,
+    base: &str,
+    remote_path: &str,
+) -> Result<()> {
+    let url = format!("{}/api/sync/files/{}", base, remote_path);
+    let resp = client.delete(&url).send().await?;
+    if !resp.status().is_success() {
+        let body = resp.text().await.unwrap_or_default();
+        return Err(anyhow!("Delete failed: HTTP {} - {}", resp.status(), body));
+    }
     Ok(())
 }

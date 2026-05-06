@@ -102,6 +102,8 @@ pub enum Message {
     DiagnosticsWebhookChanged(String),
     SendDiagnosticsReport,
     DiagnosticsReportSent(Result<(), String>),
+    FileDeleted(bool),
+    DeleteFile(i64),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -658,6 +660,32 @@ impl AkTags {
             }
 
             Message::DaemonStatsRefreshed(stats) => { self.daemon_stats = stats; }
+
+            Message::DeleteFile(file_id) => {
+                let pool = self.pool.clone();
+                let path = self.selected_file.as_ref()
+                    .filter(|f| f.id == file_id)
+                    .map(|f| f.path.clone());
+                if let Some(path) = path {
+                    return Task::perform(
+                        async move {
+                            // Soft delete in DB first
+                            let _ = db::soft_delete_file(&pool, &path);
+                            // Then delete actual file from disk
+                            tokio::fs::remove_file(&path).await.is_ok()
+                        },
+                        Message::FileDeleted,
+                    );
+                }
+            }
+
+            Message::FileDeleted(ok) => {
+                if ok {
+                    self.selected_file = None;
+                    return self.refresh_all();
+                }
+            }
+
             Message::AddTagToFile(..) => {}
         }
         Task::none()

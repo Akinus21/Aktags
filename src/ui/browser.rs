@@ -701,6 +701,16 @@ fn view_detail(app: &AkTags) -> Element<'_, Message> {
                 .on_press(Message::FileDeselected)
                 .style(btn_plain(colors)),
             Space::with_width(Length::Fill),
+            button(text("Delete").size(12).color(colors.red()))
+                .on_press(Message::DeleteFile(file.id))
+                .padding([6, 12])
+                .style(move |_, _| button::Style {
+                    background: None,
+                    text_color: colors.red(),
+                    border: iced::border::Border { color: colors.red(), width: 1.0, radius: 4.0.into() },
+                    ..Default::default()
+                }),
+            Space::with_width(8.0),
             button(text("Open").size(13).color(Color::WHITE))
                 .on_press(Message::FileOpened(file.id))
                 .padding([6, 12])

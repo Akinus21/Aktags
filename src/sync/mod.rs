@@ -62,12 +62,13 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
 
     // 3. BUILD LOCAL MANIFEST
     info!("[sync] building local manifest ...");
-    let local_manifest = client::build_local_manifest(pool).await?;
+    let local_manifest = client::build_local_manifest(pool, &sync_root).await?;
 
     // 4. DIFF
     let mut uploads: Vec<client::ManifestEntry> = vec![];
     let mut downloads: Vec<client::ManifestEntry> = vec![];
     let mut conflicts: Vec<(client::ManifestEntry, client::ManifestEntry)> = vec![];
+    let mut delete_paths: Vec<String> = vec![];
 
     for entry in &server_manifest {
         match local_manifest.iter().find(|e| e.path == entry.path) {
@@ -77,27 +78,49 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
         }
     }
     for entry in &local_manifest {
-        if !server_manifest.iter().any(|e| e.path == entry.path) {
-            uploads.push(entry.clone());
+        match server_manifest.iter().find(|e| e.path == entry.path) {
+            Some(_) => {}
+            None => uploads.push(entry.clone()),
+        }
+    }
+
+    // Check for locally deleted files
+    {
+        let conn = pool.get()?;
+        let mut stmt = conn.prepare(
+            "SELECT path FROM files WHERE deleted_at IS NOT NULL"
+        )?;
+        let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
+        for r in rows {
+            if let Ok(path) = r {
+                // Only delete if it's within sync_root
+                let full_path = sync_root.join(&path);
+                if full_path.exists() {
+                    delete_paths.push(path);
+                }
+            }
         }
     }
 
     info!(
-        "[sync] diff result: {} uploads, {} downloads, {} conflicts",
+        "[sync] diff result: {} uploads, {} downloads, {} conflicts, {} deletes",
         uploads.len(),
         downloads.len(),
-        conflicts.len()
+        conflicts.len(),
+        delete_paths.len()
     );
 
     // 5. TRANSFER — UPLOADS
     for entry in uploads {
-        let local_path = shellexpand::tilde(&entry.path).to_string();
-        // Strip to just filename for server upload path
-        let path = std::path::Path::new(&entry.path);
-        let remote_name = path.file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or(&entry.path);
-        match client::upload_file(&http, base, remote_name, &local_path).await {
+        // Compute relative path by stripping sync_root prefix
+        let relative_path = entry.path.strip_prefix(&sync_root)
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or_else(|_| entry.path.clone());
+        let local_disk = sync_root.join(&entry.path).to_string_lossy().to_string();
+        match client::upload_file(&http, base, &relative_path, &local_disk).await {
+            .unwrap_or_else(|_| entry.path.clone());
+        let local_disk = entry.path.clone();
+        match client::upload_file(&http, base, &relative_path, &local_disk).await {
             Ok(()) => {
                 info!("[sync] uploaded {}", entry.path);
                 let pool = pool.clone();
@@ -188,7 +211,25 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
         }
     }
 
-    // 6. TAG SYNC
+    // 6. PROPAGATE DELETES — delete files that were removed locally
+    for path in delete_paths {
+        info!("[sync] deleting file on server: {}", path);
+        match client::delete_file(&http, base, &path).await {
+            Ok(()) => {
+                info!("[sync] deleted {}", path);
+                // Clean up local DB record (file already deleted from disk)
+                let pool = pool.clone();
+                tokio::task::block_in_place(|| {
+                    let _ = crate::db::remove_file(&pool, &path);
+                });
+            }
+            Err(e) => {
+                error!("[sync] delete failed for {}: {}", path, e);
+            }
+        }
+    }
+
+    // 7. TAG SYNC
     info!("[sync] syncing tags ...");
     let all_files = client::list_all_files(&http, base, 10000, 0
     ).await?;
