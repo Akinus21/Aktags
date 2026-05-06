@@ -121,7 +121,7 @@ pub enum SortDirection {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum ViewMode { Grid, List }
+pub enum ViewMode { Grid, List, Card }
 
 // ── App state ─────────────────────────────────────────────────────────────────
 
@@ -331,7 +331,8 @@ impl AkTags {
             Message::ViewToggled => {
                 self.view_mode = match self.view_mode {
                     ViewMode::Grid => ViewMode::List,
-                    ViewMode::List => ViewMode::Grid,
+                    ViewMode::List => ViewMode::Card,
+                    ViewMode::Card => ViewMode::Grid,
                 };
             }
 

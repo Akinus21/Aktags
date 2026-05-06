@@ -242,12 +242,25 @@ fn view_sidebar(app: &AkTags) -> Element<'_, Message> {
         }
     }
 
-    // Build tag chips — sorted alphabetically by tag name, free-flowing wrap
-    let mut tag_pairs: Vec<(String, i64)> = app.all_tags.iter()
-        .take(100)
-        .map(|(tag, count)| (tag.clone(), *count))
-        .collect();
-    tag_pairs.sort_by(|a, b| a.0.cmp(&b.0));
+    // Build tag chips — filtered to only tags appearing in visible files, sorted alphabetically
+    let tag_pairs: Vec<(String, i64)> = if app.active_category.is_none() && app.active_tags.is_empty() && app.search_query.is_empty() {
+        // No filters active — show all tags
+        app.all_tags.iter()
+            .take(100)
+            .map(|(tag, count)| (tag.clone(), *count))
+            .collect()
+    } else {
+        // Filter to only tags present in visible files
+        let mut tag_counts: std::collections::HashMap<String, i64> = std::collections::HashMap::new();
+        for file in &app.files {
+            for tag in &file.tags {
+                *tag_counts.entry(tag.clone()).or_insert(0) += 1;
+            }
+        }
+        let mut pairs: Vec<_> = tag_counts.into_iter().map(|(t, c)| (t, c)).collect();
+        pairs.sort_by(|a, b| a.0.cmp(&b.0));
+        pairs
+    };
 
     let tag_items: Vec<Element<'_, Message>> = tag_pairs
         .iter()
@@ -345,6 +358,7 @@ fn view_main(app: &AkTags) -> Element<'_, Message> {
     let file_area = match app.view_mode {
         ViewMode::Grid => view_grid(app),
         ViewMode::List => view_list(app),
+        ViewMode::Card => view_card(app),
     };
 
     column![
@@ -363,6 +377,7 @@ fn view_toolbar(app: &AkTags) -> Element<'_, Message> {
     let view_icon = match app.view_mode {
         ViewMode::Grid => "Grid",
         ViewMode::List => "List",
+        ViewMode::Card => "Card",
     };
 
     let inner = row![
@@ -568,6 +583,31 @@ fn view_list(app: &AkTags) -> Element<'_, Message> {
         Column::with_children(rows)
             .spacing(4)
             .padding([0u16, 16])
+            .width(Length::Fill),
+    ]
+    .width(Length::Fill)
+    .into()
+}
+
+// ── Card view ─────────────────────────────────────────────────────────────────
+
+fn view_card(app: &AkTags) -> Element<'_, Message> {
+    if app.files.is_empty() {
+        return empty_state("No files found", "Try adjusting your search or filters.", app.theme_type);
+    }
+
+    let colors = theme::default_colors(app.theme_type);
+    let selected_id = app.selected_file.as_ref().map(|s| s.id);
+    let icon_cache = &app.icon_cache;
+
+    let mut cards: Vec<_> = app.files.iter()
+        .map(|f| file_card(f, app.theme_type, selected_id == Some(f.id), icon_cache))
+        .collect();
+
+    column![
+        Column::with_children(cards)
+            .spacing(8)
+            .padding([0, 16])
             .width(Length::Fill),
     ]
     .width(Length::Fill)
