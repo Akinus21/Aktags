@@ -36,6 +36,7 @@ pub enum Panel {
 // ── Messages ──────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum Message {
     SwitchPanel(Panel),
     SearchChanged(String),
@@ -107,6 +108,7 @@ pub enum Message {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+#[allow(dead_code)]
 pub enum SortField {
     Name,
     Category,
@@ -170,6 +172,7 @@ pub struct AkTags {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum SyncStatus {
     Idle,
     Connecting,
@@ -256,6 +259,7 @@ impl AkTags {
         (app, cmd)
     }
 
+    #[allow(dead_code)]
     pub fn title(&self) -> String {
         "AkTags".to_string()
     }

@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 
 /// Graveyard entry metadata
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct GraveyardEntry {
     pub id: i64,
     pub original_path: String,
@@ -124,6 +125,7 @@ pub fn entomb(
 }
 
 /// Restore a file from the graveyard. Returns the content bytes.
+#[allow(dead_code)]
 pub fn unearth(original_path: &Path) -> Result<Option<Vec<u8>>> {
     let db_path = graveyard_db_path();
     if !db_path.exists() {

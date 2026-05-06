@@ -39,6 +39,7 @@ impl Default for SearchFilter {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct DbStats {
     pub total: i64,
     pub errors: i64,
@@ -246,6 +247,7 @@ pub fn mark_synced(pool: &DbPool, path: &str, hash: &str) -> Result<()> {
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn remove_file(pool: &DbPool, path: &str) -> Result<()> {
     let conn = pool.get()?;
     conn.execute("DELETE FROM files WHERE path=?", params![path])?;
@@ -428,6 +430,7 @@ pub fn get_file_by_id(pool: &DbPool, id: i64) -> Result<Option<FileRecord>> {
     }))
 }
 
+#[allow(dead_code)]
 pub fn clear_errors(pool: &DbPool) -> Result<usize> {
     let conn = pool.get()?;
     let n = conn.execute(

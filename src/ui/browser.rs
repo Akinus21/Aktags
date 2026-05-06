@@ -932,6 +932,7 @@ fn truncate(s: &str, max: usize) -> String {
 
 // ── Tag wrapping helper ───────────────────────────────────────────────────────
 
+#[allow(dead_code)]
 fn wrap_tag_rows(
     items: Vec<Element<'_, Message>>,
     spacing: f32,

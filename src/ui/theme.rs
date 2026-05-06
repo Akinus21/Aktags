@@ -72,6 +72,7 @@ pub fn theme_file_path(name: &str) -> PathBuf {
     themes_dir().join(format!("{name}.json"))
 }
 
+#[allow(dead_code)]
 pub fn list_themes() -> Vec<ThemeType> {
     let dir = themes_dir();
     if !dir.exists() {
@@ -93,6 +94,7 @@ pub fn list_themes() -> Vec<ThemeType> {
     themes
 }
 
+#[allow(dead_code)]
 pub fn load_theme(theme_type: ThemeType) -> ThemeColors {
     let name = theme_type.to_string();
     let path = theme_file_path(&name);
@@ -210,9 +212,11 @@ pub fn iced_theme(theme_type: ThemeType) -> iced::Theme {
 pub const SIDEBAR_W: f32 = 240.0;
 pub const DETAIL_W: f32 = 300.0;
 pub const HEADER_H: f32 = 52.0;
+#[allow(dead_code)]
 pub const THUMBNAIL_SIZE: u32 = 120;
 pub const CARD_W: f32 = 180.0;
 pub const CARD_H: f32 = 200.0;
 pub const SPACING: f32 = 12.0;
 pub const PADDING: f32 = 16.0;
+#[allow(dead_code)]
 pub const RADIUS: f32 = 8.0;

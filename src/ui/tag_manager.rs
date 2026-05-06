@@ -292,6 +292,7 @@ pub fn view_taxonomy(app: &AkTags) -> Element<'_, Message> {
 }
 
 /// Wrap elements into rows of `per_row` items.
+#[allow(dead_code)]
 fn wrap_elements(
     items: Vec<Element<'_, Message>>,
     per_row: usize,

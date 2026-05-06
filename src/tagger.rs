@@ -33,11 +33,13 @@ struct TagResponse {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct OllamaTagsResponse {
     models: Vec<OllamaModel>,
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct OllamaModel {
     name: String,
 }
@@ -173,6 +175,7 @@ pub async fn tag_file(
     Ok((parsed.summary, tags))
 }
 
+#[allow(dead_code)]
 pub async fn check_ollama(client: &reqwest::Client, base_url: &str, model: &str) -> Result<String> {
     let url = format!("{}/api/tags", base_url.trim_end_matches('/'));
     let resp = client.get(&url)

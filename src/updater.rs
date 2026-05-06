@@ -15,6 +15,7 @@ pub struct Release {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum UpdateStatus {
     UpToDate,
     Available { version: String, html_url: String, body: String },

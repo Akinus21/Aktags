@@ -28,6 +28,7 @@ pub struct IconCache {
 }
 
 impl IconCache {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self::default()
     }
@@ -40,10 +41,12 @@ impl IconCache {
         self.by_path.get(path)
     }
 
+    #[allow(dead_code)]
     pub fn insert_ext(&mut self, ext: String, icon: IconData) {
         self.by_ext.insert(ext, icon);
     }
 
+    #[allow(dead_code)]
     pub fn insert_path(&mut self, path: String, icon: IconData) {
         self.by_path.insert(path, icon);
     }
@@ -163,6 +166,7 @@ pub fn is_image_file(ext: &str) -> bool {
     )
 }
 
+#[allow(dead_code)]
 pub fn is_svg_file(ext: &str) -> bool {
     ext.to_lowercase() == ".svg"
 }
