@@ -208,17 +208,16 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
 
     // 6. PROPAGATE DELETES — delete files that were removed locally
     for abs_path in delete_paths {
-        // Convert absolute path to relative for server
-        let rel_path = std::path::Path::new(&abs_path)
-            .strip_prefix(&sync_root)
+        // Try stripping each watch_dir to get relative path for server
+        let rel_path = watch_dirs.iter()
+            .find_map(|wd| std::path::Path::new(&abs_path).strip_prefix(wd).ok())
             .map(|p| p.to_string_lossy().to_string())
-            .unwrap_or_else(|_| abs_path.clone());
+            .unwrap_or_else(|| abs_path.clone());
 
         info!("[sync] deleting file on server: {}", rel_path);
         match client::delete_file(&http, base, &rel_path).await {
             Ok(()) => {
                 info!("[sync] deleted {}", rel_path);
-                // Record stays soft-deleted in DB (deleted_at is already set)
             }
             Err(e) => {
                 // 404 = file already gone on server, treat as success
