@@ -11,6 +11,7 @@ path = "src/main.rs"
 [dependencies]
 # ── GUI ───────────────────────────────────────────────────────────────────────
 iced = { version = "0.13", default-features = false, features = ["tokio", "image", "tiny-skia"] }
+rfd = "0.15"
 
 # ── Async runtime ─────────────────────────────────────────────────────────────
 tokio = { version = "1", features = ["full"] }

@@ -308,7 +308,7 @@ pub fn view(app: &AkTags) -> Element<'_, Message> {
             text("Set AkTags as default file manager").size(13).color(colors.text()),
             Space::with_width(Length::Fill),
             toggler(app.config.ui.default_file_manager)
-                .on_toggle(Message::ToggleDefaultFileManager),
+                .on_toggle(|_| Message::ToggleDefaultFileManager),
         ],
 
         Space::with_height(24.0),

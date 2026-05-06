@@ -564,6 +564,16 @@ fn view_detail(app: &AkTags) -> Element<'_, Message> {
                     ..Default::default()
                 }),
             Space::with_width(8.0),
+            button(text("Save As").size(12).color(colors.text()))
+                .on_press(Message::SaveFileAs(file.id))
+                .padding([6, 12])
+                .style(move |_, _| button::Style {
+                    background: Some(colors.surface2().into()),
+                    text_color: colors.text(),
+                    border: iced::border::Border { color: colors.border(), width: 1.0, radius: 4.0.into() },
+                    ..Default::default()
+                }),
+            Space::with_width(8.0),
             button(text("Open").size(13).color(Color::WHITE))
                 .on_press(Message::FileOpened(file.id))
                 .padding([6, 12])

@@ -110,6 +110,9 @@ pub enum Message {
     DiagnosticsReportSent(Result<(), String>),
     FileDeleted(bool),
     DeleteFile(i64),
+    ImportFile,
+    SaveFileAs(i64),
+    SaveFileWithTags(String, Vec<String>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -154,6 +157,8 @@ pub struct AkTags {
     pub rejected_tags: Vec<String>,
     pub new_tag_name: String,
     pub new_tag_category: String,
+    pub save_file_id: Option<i64>,
+    pub save_selected_tags: Vec<String>,
     pub new_tag_aliases: String,
     pub settings_ollama_url: String,
     pub settings_ollama_model: String,
@@ -226,6 +231,8 @@ impl AkTags {
             new_tag_name: String::new(),
             new_tag_category: String::new(),
             new_tag_aliases: String::new(),
+            save_file_id: None,
+            save_selected_tags: vec![],
             settings_ollama_url,
             settings_ollama_model,
             settings_watch_dir_input: String::new(),
