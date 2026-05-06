@@ -601,15 +601,84 @@ fn view_card(app: &AkTags) -> Element<'_, Message> {
     let icon_cache = &app.icon_cache;
 
     let mut cards: Vec<_> = app.files.iter()
-        .map(|f| file_card(f, app.theme_type, selected_id == Some(f.id), icon_cache))
+        .map(|f| file_card_horizontal(f, app.theme_type, selected_id == Some(f.id), icon_cache))
         .collect();
 
     column![
         Column::with_children(cards)
-            .spacing(8)
+            .spacing(6)
             .padding([0, 16])
             .width(Length::Fill),
     ]
+    .width(Length::Fill)
+    .into()
+}
+
+fn file_card_horizontal<'a>(
+    file: &'a FileRecord,
+    theme_type: theme::ThemeType,
+    selected: bool,
+    icon_cache: &'a IconCache,
+) -> Element<'a, Message> {
+    let colors = theme::default_colors(theme_type);
+    let name = truncate(&file.filename, 60);
+    let description = file.summary.as_deref().unwrap_or("No description").to_string();
+
+    let tags: Vec<Element<'_, Message>> = file.tags.iter()
+        .map(|t| {
+            let t_owned = t.clone();
+            button(text(t).size(11).color(colors.text()))
+                .on_press(Message::TagToggled(t_owned))
+                .padding([2, 6])
+                .style(btn_tag(colors))
+                .into()
+        })
+        .collect();
+
+    let card_content = column![
+        // Line 1: Title (bold, large)
+        text(name).size(15).color(colors.text()),
+        // Line 2: Description (wraps, smaller)
+        container(text(description).size(12).color(colors.text_dim()))
+            .width(Length::Fill),
+        // Line 3: Category : Size
+        row![
+            text(&file.category).size(12).color(colors.accent2()),
+            text(" : ").size(12).color(colors.text_dim()),
+            text(fmt_size(file.size_bytes)).size(12).color(colors.text_dim()),
+            Space::with_width(Length::Fill),
+        ]
+        .align_y(Alignment::Center),
+        // Line 4: Tags (right-aligned)
+        row![
+            Space::with_width(Length::Fill),
+            Row::with_children(tags).spacing(4),
+        ]
+        .align_y(Alignment::Center),
+    ]
+    .spacing(6)
+    .padding([12, 14]);
+
+    let bg = if selected { colors.surface2() } else { colors.surface() };
+    let border_color = if selected { colors.accent() } else { colors.border() };
+
+    container(
+        button(card_content)
+            .on_press(Message::FileSelected(file.id))
+            .style(move |_, status| button::Style {
+                background: Some(match status {
+                    button::Status::Hovered => colors.surface2().into(),
+                    _ => bg.into(),
+                }),
+                text_color: colors.text(),
+                border: Border {
+                    color: border_color,
+                    width: if selected { 1.5 } else { 1.0 },
+                    radius: 6.0.into(),
+                },
+                ..Default::default()
+            })
+    )
     .width(Length::Fill)
     .into()
 }
