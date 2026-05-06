@@ -265,7 +265,7 @@ fn view_sidebar(app: &AkTags) -> Element<'_, Message> {
                 .style(move |_, _| button::Style {
                     background: Some(colors2.tag_bg().into()),
                     text_color: colors2.text(),
-                    border: iced::border::Border { radius: 1.0.into(), ..Default::default() },
+                    border: iced::border::Border { radius: 0.0.into(), ..Default::default() },
                     ..Default::default()
                 })
             )
