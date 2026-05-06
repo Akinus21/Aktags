@@ -84,7 +84,7 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
         }
     }
 
-    // Check for locally deleted files
+    // Check for locally deleted files (soft-deleted records)
     {
         let conn = pool.get()?;
         let mut stmt = conn.prepare(
@@ -93,11 +93,9 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
         let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
         for r in rows {
             if let Ok(path) = r {
-                // Only delete if it's within sync_root
-                let full_path = sync_root.join(&path);
-                if full_path.exists() {
-                    delete_paths.push(path);
-                }
+                // If deleted_at is set, the file was intentionally deleted locally
+                // Propagate the deletion to server regardless of whether local file exists
+                delete_paths.push(path);
             }
         }
     }
@@ -112,21 +110,20 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
 
     // 5. TRANSFER — UPLOADS
     for entry in uploads {
-        // Compute relative path by stripping sync_root prefix
+        // Compute relative path for server, keep absolute path for local DB operations
         let entry_path = std::path::Path::new(&entry.path);
         let relative_path = entry_path
             .strip_prefix(&sync_root)
             .map(|p| p.to_string_lossy().to_string())
             .unwrap_or_else(|_| entry.path.clone());
         let local_disk = sync_root.join(&entry.path).to_string_lossy().to_string();
+        let absolute_path = entry.path.clone(); // Keep absolute for mark_synced
         match client::upload_file(&http, base, &relative_path, &local_disk).await {
             Ok(()) => {
                 info!("[sync] uploaded {}", entry.path);
                 let pool = pool.clone();
-                let path = entry.path.clone();
-                let hash = entry.hash.clone();
                 tokio::task::block_in_place(|| {
-                    let _ = crate::db::mark_synced(&pool, &path, &hash);
+                    let _ = crate::db::mark_synced(&pool, &absolute_path, &entry.hash);
                 });
             }
             Err(e) => {
@@ -140,15 +137,14 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
         // Use server's path as-is (server stores relative paths in manifest)
         let remote_path = entry.path.as_str();
         // Map to local watch directory for download destination
-        let local_path = sync_root.join(&entry.path).to_string_lossy().to_string();
-        match client::download_file(&http, base, remote_path, &local_path).await {
+        let local_disk = sync_root.join(&entry.path).to_string_lossy().to_string();
+        let absolute_path = sync_root.join(&entry.path).to_string_lossy().to_string();
+        match client::download_file(&http, base, remote_path, &local_disk).await {
             Ok(()) => {
                 info!("[sync] downloaded {}", entry.path);
                 let pool = pool.clone();
-                let path = entry.path.clone();
-                let hash = entry.hash.clone();
                 tokio::task::block_in_place(|| {
-                    let _ = crate::db::mark_synced(&pool, &path, &hash);
+                    let _ = crate::db::mark_synced(&pool, &absolute_path, &entry.hash);
                 });
             }
             Err(e) => {
