@@ -36,6 +36,7 @@ pub struct UiConfig {
     pub sidebar_width: u32,
     pub detail_panel_width: u32,
     pub theme: String,
+    pub default_file_manager: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -169,6 +170,7 @@ impl Default for UiConfig {
             sidebar_width: 240,
             detail_panel_width: 300,
             theme: "Noctalia".to_string(),
+            default_file_manager: false,
         }
     }
 }

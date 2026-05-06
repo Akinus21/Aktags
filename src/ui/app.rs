@@ -79,6 +79,7 @@ pub enum Message {
     WatchDirRemove(PathBuf),
     WatchDirInputChanged(String),
     SaveSettings,
+    ToggleDefaultFileManager,
     RetagAll,
     ThemeChanged(String),
     StartDaemon,
@@ -592,6 +593,27 @@ impl AkTags {
                 self.status_message = Some("Settings saved".into());
             }
 
+            Message::ToggleDefaultFileManager => {
+                let new_val = !self.config.ui.default_file_manager;
+                if new_val {
+                    if let Err(e) = crate::mime::set_as_default_file_manager() {
+                        self.status_message = Some(format!("Failed to set as default: {}", e));
+                    } else {
+                        self.config.ui.default_file_manager = true;
+                        let _ = config::save(&self.config);
+                        self.status_message = Some("Set as default file manager".into());
+                    }
+                } else {
+                    if let Err(e) = crate::mime::unset_as_default_file_manager() {
+                        self.status_message = Some(format!("Failed to unset: {}", e));
+                    } else {
+                        self.config.ui.default_file_manager = false;
+                        let _ = config::save(&self.config);
+                        self.status_message = Some("Removed as default file manager".into());
+                    }
+                }
+            }
+
             Message::RetagAll => {
                 self.daemon.lock().unwrap().retag_all();
                 self.status_message = Some("Re-tag queued for all files".into());
@@ -714,6 +736,7 @@ impl AkTags {
             Panel::Browser   => super::browser::view(self),
             Panel::Pending   => super::tag_manager::view_pending(self),
             Panel::Taxonomy  => super::tag_manager::view_taxonomy(self),
+            Panel::Rejected  => super::tag_manager::view_rejected(self),
             Panel::Settings  => super::settings::view(self),
         }
     }

@@ -5,6 +5,7 @@ mod diagnostics;
 mod extractor;
 mod graveyard;
 mod icon;
+mod mime;
 mod auto_update;
 mod tagger;
 mod taxonomy;

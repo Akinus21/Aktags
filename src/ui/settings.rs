@@ -300,6 +300,17 @@ pub fn view(app: &AkTags) -> Element<'_, Message> {
             theme_button("Noctalia", "Noctalia", app.theme_type == ThemeType::Noctalia, colors),
         ],
 
+        Space::with_height(16.0),
+
+        // ── Default File Manager ─────────────────────────────────────────────
+        section_header("Default File Manager".to_string(), colors),
+        row![
+            text("Set AkTags as default file manager").size(13).color(colors.text()),
+            Space::with_width(Length::Fill),
+            toggler(app.config.ui.default_file_manager)
+                .on_toggle(Message::ToggleDefaultFileManager),
+        ],
+
         Space::with_height(24.0),
 
         // ── Updates ────────────────────────────────────────────────────────────

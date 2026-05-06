@@ -217,6 +217,7 @@ pub fn view_rejected(app: &AkTags) -> Element<'_, Message> {
                         background: Some(colors.tag_bg().into()),
                         text_color: colors.text(),
                         border: Default::default(),
+                        shadow: Default::default(),
                     }),
                 Space::with_width(4.0),
                 button(text("×").size(12).color(colors.text_dim()))
