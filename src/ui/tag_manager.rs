@@ -241,9 +241,6 @@ pub fn view_taxonomy(app: &AkTags) -> Element<'_, Message> {
             .map(|(name, meta)| taxonomy_tag_chip(name, meta, colors))
             .collect();
 
-        // Wrap chips into rows of ~6 items each to prevent overflow
-        let wrapped = wrap_elements(chips, 6, 8.0);
-
         sections.push(
             container(
                 column![
@@ -256,7 +253,9 @@ pub fn view_taxonomy(app: &AkTags) -> Element<'_, Message> {
                     ]
                     .align_y(Alignment::Center),
                     Space::with_height(8.0),
-                    wrapped,
+                    scrollable(
+                        Row::with_children(chips).spacing(6).wrap()
+                    ).height(Length::Shrink),
                 ]
                 .spacing(0)
                 .width(Length::Fill)

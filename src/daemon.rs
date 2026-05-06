@@ -141,8 +141,29 @@ impl Daemon {
             let scan_dirs = watch_dirs.clone();
             let scan_supported = supported.clone();
             let scan_tx = event_tx_clone.clone();
+            let scan_pool = pool.clone();
             tokio::spawn(async move {
                 let mut count = 0;
+
+                // Clean up orphaned DB entries first
+                {
+                    let conn = scan_pool.get().ok();
+                    if let Some(conn) = conn {
+                        let mut stmt = conn.prepare("SELECT id, path FROM files WHERE deleted_at IS NULL").ok();
+                        if let Some(mut stmt) = stmt {
+                            let records: Vec<(i64, String)> = stmt.query_map([], |row| {
+                                Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?))
+                            }).filter_map(|r| r.ok()).collect();
+                            for (id, path) in records {
+                                if !std::path::Path::new(&path).exists() {
+                                    conn.execute("UPDATE files SET deleted_at=datetime('now') WHERE id=?", params![id]).ok();
+                                    info!("Cleaned up orphan: {}", path);
+                                }
+                            }
+                        }
+                    }
+                }
+
                 for dir in &scan_dirs {
                     for entry in walkdir::WalkDir::new(dir)
                         .follow_links(true)
@@ -196,8 +217,10 @@ impl Daemon {
                                 }
                             }
                             FileEvent::Delete(path) => {
-                                let _ = db::remove_file(&pool, path.to_str().unwrap_or(""));
-                                info!("Removed: {}", path.display());
+                                // Soft delete so sync can propagate the deletion
+                                let path_str = path.to_str().unwrap_or("");
+                                let _ = db::soft_delete_file(&pool, path_str);
+                                info!("Marked deleted: {}", path.display());
                             }
                             FileEvent::RetagAll => {
                                 let dirs = cfg.watch_dirs.clone();
