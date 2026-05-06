@@ -111,6 +111,7 @@ pub enum Message {
     FileDeleted(bool),
     DeleteFile(i64),
     ImportFile,
+    ImportReady(Option<String>),
     SaveFileAs(i64),
     SavePathChosen(Option<String>),
     FileSaved(bool),
@@ -738,11 +739,11 @@ impl AkTags {
                     let file_path = rfd::FileDialog::new()
                         .pick_file()
                         .map(|p| p.to_string_lossy().to_string());
-                    Message::FilePicked(file_path)
+                    Message::ImportReady(file_path)
                 }, |r| r);
             }
 
-            Message::FilePicked(path_opt) => {
+            Message::ImportReady(path_opt) => {
                 if let Some(path) = path_opt {
                     if let Some(dest) = self.config.watch_dirs.first() {
                         let file_name = std::path::Path::new(&path)
@@ -751,26 +752,29 @@ impl AkTags {
                             .unwrap_or_else(|| "imported_file".to_string());
                         let dest_path = dest.join(&file_name);
                         let pool = self.pool.clone();
-                        let dest_path_str = dest_path.to_string_lossy().to_string();
                         return Task::perform(
                             async move {
                                 if let Err(e) = tokio::fs::copy(&path, &dest_path).await {
                                     tracing::error!("Failed to import file: {}", e);
                                     return false;
                                 }
-                                db::scan_and_index(&pool, &dest_path_str).is_ok()
+                                let _ = db::file_hash(&dest_path);
+                                true
                             },
-                            Message::FileImported,
+                            Message::FileSaved,
                         );
                     }
                 }
+                Task::none()
             }
 
-            Message::FileImported(ok) => {
+            Message::FileSaved(ok) => {
+                self.save_file_id = None;
+                self.save_selected_tags.clear();
                 self.status_message = Some(
-                    if ok { "File imported".into() } else { "Import failed".into() }
+                    if ok { "File saved with tags".into() } else { "Save failed".into() }
                 );
-                return self.refresh_all();
+                Task::none()
             }
 
             Message::SaveFileAs(file_id) => {
