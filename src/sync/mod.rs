@@ -118,9 +118,6 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
             .unwrap_or_else(|_| entry.path.clone());
         let local_disk = sync_root.join(&entry.path).to_string_lossy().to_string();
         match client::upload_file(&http, base, &relative_path, &local_disk).await {
-            .unwrap_or_else(|_| entry.path.clone());
-        let local_disk = entry.path.clone();
-        match client::upload_file(&http, base, &relative_path, &local_disk).await {
             Ok(()) => {
                 info!("[sync] uploaded {}", entry.path);
                 let pool = pool.clone();
