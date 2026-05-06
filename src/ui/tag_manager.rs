@@ -291,42 +291,6 @@ pub fn view_taxonomy(app: &AkTags) -> Element<'_, Message> {
     .into()
 }
 
-/// Wrap elements into rows of `per_row` items.
-#[allow(dead_code)]
-fn wrap_elements(
-    items: Vec<Element<'_, Message>>,
-    per_row: usize,
-    spacing: f32,
-) -> Element<'_, Message> {
-    if items.is_empty() {
-        return Space::with_height(0.0).into();
-    }
-    let mut rows: Vec<Element<'_, Message>> = Vec::new();
-    let mut current: Vec<Element<'_, Message>> = Vec::with_capacity(per_row);
-    for item in items {
-        current.push(item);
-        if current.len() == per_row {
-            rows.push(
-                Row::with_children(current)
-                    .spacing(spacing)
-                    .into()
-            );
-            current = Vec::with_capacity(per_row);
-        }
-    }
-    if !current.is_empty() {
-        rows.push(
-            Row::with_children(current)
-                .spacing(spacing)
-                .into()
-        );
-    }
-    Column::with_children(rows)
-        .spacing(spacing)
-        .width(Length::Fill)
-        .into()
-}
-
 fn taxonomy_tag_chip<'a>(
     name: &'a str,
     meta: &'a crate::taxonomy::TagMeta,

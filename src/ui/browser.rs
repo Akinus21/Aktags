@@ -6,8 +6,8 @@ use iced::{
     Alignment, Border, Color, Element, Length,
 };
 
-use super::app::{AkTags, Message, Panel, ViewMode};
-use super::theme::{self, ThemeColors, PADDING, DETAIL_W, HEADER_H, SIDEBAR_W, SPACING, CARD_W, CARD_H};
+use super::app::{AkTags, Message, Panel};
+use super::theme::{self, ThemeColors, PADDING, DETAIL_W, HEADER_H, SIDEBAR_W, SPACING};
 use crate::db::FileRecord;
 use crate::icon::{IconCache, load_icon_for_ext, load_thumbnail_for_path, is_image_file};
 
@@ -355,11 +355,7 @@ fn category_icon(cat: &str) -> &'static str {
 fn view_main(app: &AkTags) -> Element<'_, Message> {
     let toolbar = view_toolbar(app);
     let active_filters = view_active_filters(app);
-    let file_area = match app.view_mode {
-        ViewMode::Grid => view_grid(app),
-        ViewMode::List => view_list(app),
-        ViewMode::Card => view_card(app),
-    };
+    let file_area = view_card(app);
 
     column![
         toolbar,
@@ -374,11 +370,6 @@ fn view_main(app: &AkTags) -> Element<'_, Message> {
 fn view_toolbar(app: &AkTags) -> Element<'_, Message> {
     let colors = theme::default_colors(app.theme_type);
     let count_label = format!("{} files", app.files.len());
-    let view_icon = match app.view_mode {
-        ViewMode::Grid => "Grid",
-        ViewMode::List => "List",
-        ViewMode::Card => "Card",
-    };
 
     let inner = row![
         text_input("Search files...", &app.search_query)
@@ -388,11 +379,6 @@ fn view_toolbar(app: &AkTags) -> Element<'_, Message> {
             .width(Length::Fill),
         Space::with_width(10.0),
         text(count_label).size(12).color(colors.text_dim()),
-        Space::with_width(10.0),
-        button(text(view_icon).size(13).color(colors.text()))
-            .on_press(Message::ViewToggled)
-            .padding([6, 10])
-            .style(btn_plain(colors)),
     ]
     .padding([12, 16])
     .align_y(Alignment::Center);
@@ -443,151 +429,7 @@ fn filter_chip(label: String, on_remove: Message, colors: ThemeColors) -> Elemen
     .into()
 }
 
-// ── Grid view ─────────────────────────────────────────────────────────────────
 
-fn view_grid(app: &AkTags) -> Element<'_, Message> {
-    if app.files.is_empty() {
-        return empty_state("No files found", "Try adjusting your search or filters.", app.theme_type);
-    }
-
-    let selected_id = app.selected_file.as_ref().map(|s| s.id);
-    let files = &app.files;
-    let icon_cache = &app.icon_cache;
-    let mut rows: Vec<Element<'_, Message>> = Vec::new();
-    for chunk in files.chunks(4) {
-        let row_items: Vec<Element<'_, Message>> = chunk.iter()
-            .map(|f| file_card(f, app.theme_type, selected_id == Some(f.id), icon_cache))
-            .collect();
-        rows.push(
-            Row::with_children(row_items)
-                .spacing(SPACING)
-                .width(Length::Fill)
-                .into()
-        );
-    }
-
-    scrollable(
-        Column::with_children(rows)
-            .spacing(SPACING)
-            .padding(PADDING)
-    )
-    .width(Length::Fill)
-    .into()
-}
-
-fn file_card<'a>(
-    file: &'a FileRecord,
-    theme_type: theme::ThemeType,
-    selected: bool,
-    icon_cache: &'a IconCache,
-) -> Element<'a, Message> {
-    let colors = theme::default_colors(theme_type);
-    let icon_elem = icon_view(icon_cache, &file.extension, &file.path, 48);
-    let name = truncate(&file.filename, 22);
-    let summary = file.summary.as_deref().unwrap_or("").to_string();
-    let summary_short = truncate(&summary, 50);
-
-    let tags: Vec<Element<'_, Message>> = file.tags.iter().take(3)
-        .map(|t| {
-            button(text(t).size(10).color(colors.text()))
-                .on_press(Message::TagToggled(t.clone()))
-                .padding([2, 6])
-                .style(btn_tag(colors))
-                .into()
-        })
-        .collect();
-
-    let card_content = column![
-        icon_elem,
-        Space::with_height(8.0),
-        text(name).size(12).color(colors.text()),
-        text(summary_short).size(11).color(colors.text_dim()),
-        Space::with_height(4.0),
-        Row::with_children(tags).spacing(3),
-    ]
-    .spacing(4)
-    .padding(12)
-    .width(CARD_W)
-    .height(CARD_H);
-
-    let bg = if selected { colors.surface2() } else { colors.surface() };
-    let border_color = if selected { colors.accent() } else { colors.border() };
-
-    button(card_content)
-        .on_press(Message::FileSelected(file.id))
-        .style(move |_, status| button::Style {
-            background: Some(match status {
-                button::Status::Hovered => colors.surface2().into(),
-                _ => bg.into(),
-            }),
-            text_color: colors.text(),
-            border: Border {
-                color: border_color,
-                width: if selected { 1.5 } else { 1.0 },
-                radius: 8.0.into(),
-            },
-            ..Default::default()
-        })
-        .into()
-}
-
-// ── List view ─────────────────────────────────────────────────────────────────
-
-fn view_list(app: &AkTags) -> Element<'_, Message> {
-    if app.files.is_empty() {
-        return empty_state("No files found", "Try adjusting your search or filters.", app.theme_type);
-    }
-
-    let colors = theme::default_colors(app.theme_type);
-    let selected_id = app.selected_file.as_ref().map(|s| s.id);
-
-    // Sort indicator arrow (unused - each sort_header computes its own arrow)
-    let _arrow = |field: super::app::SortField| {
-        if app.sort_field == field {
-            match app.sort_direction {
-                super::app::SortDirection::Ascending => " ▲",
-                super::app::SortDirection::Descending => " ▼",
-            }
-        } else {
-            ""
-        }.to_string()
-    };
-
-    // Column header row
-    let header = row![
-        text("").size(12).width(30.0), // icon column spacer
-        sort_header("Name", super::app::SortField::Name, colors, &app),
-        Space::with_width(Length::Fill),
-        text("Tags").size(11).color(colors.text_dim()),
-        Space::with_width(12.0),
-        sort_header("Category", super::app::SortField::Category, colors, &app),
-        Space::with_width(12.0),
-        sort_header("Size", super::app::SortField::Size, colors, &app),
-    ]
-    .spacing(8)
-    .align_y(Alignment::Center)
-    .padding([6, 12])
-    .width(Length::Fill);
-
-    let header_container = container(header)
-        .width(Length::Fill)
-        .style(bg_style(colors.surface2()));
-
-    let icon_cache = &app.icon_cache;
-    let rows: Vec<Element<'_, Message>> = app.files.iter()
-        .map(|f| file_row(f, app.theme_type, selected_id == Some(f.id), icon_cache))
-        .collect();
-
-    column![
-        header_container,
-        Column::with_children(rows)
-            .spacing(4)
-            .padding([0u16, 16])
-            .width(Length::Fill),
-    ]
-    .width(Length::Fill)
-    .into()
-}
 
 // ── Card view ─────────────────────────────────────────────────────────────────
 
@@ -649,12 +491,8 @@ fn file_card_horizontal<'a>(
             Space::with_width(Length::Fill),
         ]
         .align_y(Alignment::Center),
-        // Line 4: Tags (right-aligned)
-        row![
-            Space::with_width(Length::Fill),
-            Row::with_children(tags).spacing(4),
-        ]
-        .align_y(Alignment::Center),
+        // Line 4: Tags (wrapping)
+        Row::with_children(tags).spacing(4).wrap(),
     ]
     .spacing(6)
     .padding([12, 14]);
@@ -683,99 +521,6 @@ fn file_card_horizontal<'a>(
     .into()
 }
 
-fn sort_header<'a>(
-    label: &'a str,
-    field: super::app::SortField,
-    colors: ThemeColors,
-    app: &'a AkTags,
-) -> Element<'a, Message> {
-    let is_active = app.sort_field == field;
-    let arrow = if is_active {
-        match app.sort_direction {
-            super::app::SortDirection::Ascending => " ▲",
-            super::app::SortDirection::Descending => " ▼",
-        }
-    } else {
-        ""
-    };
-    let full_label = format!("{}{}", label, arrow);
-
-    button(text(full_label).size(11).color(if is_active {
-        colors.accent()
-    } else {
-        colors.text_dim()
-    }))
-        .on_press(Message::SortChanged(field))
-        .padding([2, 6])
-        .style(move |_, status| button::Style {
-            background: match status {
-                button::Status::Hovered => Some(colors.surface().into()),
-                _ => None,
-            },
-            text_color: if is_active { colors.accent() } else { colors.text_dim() },
-            ..Default::default()
-        })
-        .into()
-}
-
-fn file_row<'a>(
-    file: &'a FileRecord,
-    theme_type: theme::ThemeType,
-    selected: bool,
-    icon_cache: &'a IconCache,
-) -> Element<'a, Message> {
-    let colors = theme::default_colors(theme_type);
-    let icon_elem = icon_view(icon_cache, &file.extension, &file.path, 18);
-    let tags: Vec<Element<'_, Message>> = file.tags.iter().take(4)
-        .map(|t| {
-            button(text(t).size(11).color(colors.text()))
-                .on_press(Message::TagToggled(t.clone()))
-                .padding([2, 6])
-                .style(btn_tag(colors))
-                .into()
-        })
-        .collect();
-
-    let row_content = row![
-        container(icon_elem).width(30.0),
-        column![
-            text(&file.filename).size(13).color(colors.text()),
-            text(file.summary.as_deref().unwrap_or("")).size(11)
-                .color(colors.text_dim()),
-        ]
-        .spacing(2)
-        .width(Length::Fill),
-        Row::with_children(tags).spacing(3),
-        text(&file.category).size(11)
-            .color(colors.text_dim())
-            .width(80.0),
-        text(fmt_size(file.size_bytes)).size(11)
-            .color(colors.text_dim())
-            .width(70.0),
-    ]
-    .spacing(12)
-    .align_y(Alignment::Center)
-    .padding([8, 12]);
-
-    let bg = if selected { colors.surface2() } else { colors.bg() };
-    button(row_content)
-        .on_press(Message::FileSelected(file.id))
-        .width(Length::Fill)
-        .style(move |_, status| button::Style {
-            background: Some(match status {
-                button::Status::Hovered => colors.surface2().into(),
-                _ => bg.into(),
-            }),
-            text_color: colors.text(),
-            border: Border {
-                color: if selected { colors.accent() } else { Color::TRANSPARENT },
-                width: 1.0,
-                radius: 6.0.into(),
-            },
-            ..Default::default()
-        })
-        .into()
-}
 
 // ── Detail panel ──────────────────────────────────────────────────────────────
 
@@ -928,57 +673,6 @@ fn truncate(s: &str, max: usize) -> String {
     } else {
         format!("{}…", s.chars().take(max).collect::<String>())
     }
-}
-
-// ── Tag wrapping helper ───────────────────────────────────────────────────────
-
-#[allow(dead_code)]
-fn wrap_tag_rows(
-    items: Vec<Element<'_, Message>>,
-    spacing: f32,
-    available_width: f32,
-) -> Element<'_, Message> {
-    if items.is_empty() {
-        return Space::with_height(0.0).into();
-    }
-
-    let chip_spacing = spacing;
-    let chip_min_width = 90.0;
-
-    let mut chip_rows: Vec<Vec<Element<'_, Message>>> = Vec::new();
-    let mut current_row: Vec<Element<'_, Message>> = Vec::new();
-    let mut current_row_width: f32 = 0.0;
-
-    for item in items {
-        if !current_row.is_empty() && current_row_width + chip_min_width > available_width {
-            chip_rows.push(std::mem::take(&mut current_row));
-            current_row_width = 0.0;
-        }
-        current_row.push(item);
-        current_row_width += chip_min_width + chip_spacing;
-    }
-    if !current_row.is_empty() {
-        chip_rows.push(current_row);
-    }
-
-    let rows: Vec<Element<'_, Message>> = chip_rows
-        .into_iter()
-        .map(|row_items| {
-            Row::with_children(row_items)
-                .spacing(chip_spacing)
-                .align_y(Alignment::Center)
-                .into()
-        })
-        .collect();
-
-    scrollable(
-        Column::with_children(rows)
-            .spacing(spacing)
-            .width(Length::Fill)
-            .align_x(Alignment::Start)
-    )
-    .height(Length::Fill)
-    .into()
 }
 
 fn icon_view(icon_cache: &IconCache, ext: &str, path: &str, size: u32) -> Element<'static, Message> {

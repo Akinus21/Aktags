@@ -3,6 +3,7 @@ use reqwest::header::{AUTHORIZATION, HeaderMap, HeaderName};
 use std::path::PathBuf;
 use std::str::FromStr;
 use serde::{Deserialize, Serialize};
+use tracing::info;
 
 use crate::db::DbPool;
 
@@ -190,12 +191,19 @@ pub async fn delete_file(
     base: &str,
     remote_path: &str,
 ) -> Result<()> {
-    let url = format!("{}/api/sync/files/{}", base, remote_path);
+    let url = format!("{}/api/file/{}", base, remote_path);
     let resp = client.delete(&url).send().await?;
     let status = resp.status();
-    if !status.is_success() {
+    if status.is_success() {
+        Ok(())
+    } else if status.as_u16() == 404 {
+        info!("File already deleted on server: {}", remote_path);
+        Ok(())
+    } else if status.as_u16() == 405 {
+        info!("Delete not supported on server for: {}", remote_path);
+        Ok(())
+    } else {
         let body = resp.text().await.unwrap_or_default();
-        return Err(anyhow!("Delete failed: HTTP {} - {}", status, body));
+        Err(anyhow!("Delete failed: HTTP {} - {}", status, body))
     }
-    Ok(())
 }

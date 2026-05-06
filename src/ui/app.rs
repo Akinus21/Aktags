@@ -123,7 +123,7 @@ pub enum SortDirection {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum ViewMode { Grid, List, Card }
+pub enum ViewMode { Card }
 
 // ── App state ─────────────────────────────────────────────────────────────────
 
@@ -204,7 +204,7 @@ impl AkTags {
             daemon: Arc::new(Mutex::new(daemon)),
             shutdown_tx: None,
             panel: initial_panel,
-            view_mode: ViewMode::List,
+            view_mode: ViewMode::Card,
             files: vec![],
             all_tags: vec![],
             active_tags: vec![],
@@ -333,11 +333,7 @@ impl AkTags {
             }
 
             Message::ViewToggled => {
-                self.view_mode = match self.view_mode {
-                    ViewMode::Grid => ViewMode::List,
-                    ViewMode::List => ViewMode::Card,
-                    ViewMode::Card => ViewMode::Grid,
-                };
+                self.view_mode = ViewMode::Card;
             }
 
             Message::SortChanged(field) => {
