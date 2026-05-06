@@ -113,7 +113,9 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
     // 5. TRANSFER — UPLOADS
     for entry in uploads {
         // Compute relative path by stripping sync_root prefix
-        let relative_path = entry.path.strip_prefix(&sync_root)
+        let entry_path = std::path::Path::new(&entry.path);
+        let relative_path = entry_path
+            .strip_prefix(&sync_root)
             .map(|p| p.to_string_lossy().to_string())
             .unwrap_or_else(|_| entry.path.clone());
         let local_disk = sync_root.join(&entry.path).to_string_lossy().to_string();

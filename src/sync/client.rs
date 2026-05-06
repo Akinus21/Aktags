@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Context, Result};
 use reqwest::header::{AUTHORIZATION, HeaderMap, HeaderName};
+use std::path::PathBuf;
 use std::str::FromStr;
 use serde::{Deserialize, Serialize};
 
@@ -191,9 +192,10 @@ pub async fn delete_file(
 ) -> Result<()> {
     let url = format!("{}/api/sync/files/{}", base, remote_path);
     let resp = client.delete(&url).send().await?;
-    if !resp.status().is_success() {
+    let status = resp.status();
+    if !status.is_success() {
         let body = resp.text().await.unwrap_or_default();
-        return Err(anyhow!("Delete failed: HTTP {} - {}", resp.status(), body));
+        return Err(anyhow!("Delete failed: HTTP {} - {}", status, body));
     }
     Ok(())
 }
