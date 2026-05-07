@@ -227,9 +227,9 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
                 Ok(()) => {
                     info!("[sync] downloaded {} (server newer)", path);
                     let hash = server.hash.clone();
-                    let path = local.path.clone();
+                    let absolute_path = sync_root.join(&local.path).to_string_lossy().to_string();
                     tokio::task::block_in_place(|| {
-                        let _ = crate::db::mark_synced(&pool, &path, &hash);
+                        let _ = crate::db::mark_synced(&pool, &absolute_path, &hash);
                     });
                 }
                 Err(e) => {
