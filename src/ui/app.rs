@@ -796,7 +796,7 @@ impl AkTags {
                 if let Some(dest) = dest_opt {
                     if let Some(file_id) = self.save_file_id {
                         if let Some(file) = self.files.iter().find(|f| f.id == file_id) {
-let _pool = self.pool.clone();
+let pool = self.pool.clone();
                             let source_path = file.path.clone();
                             let tags = self.save_selected_tags.clone();
                             return Task::perform(
