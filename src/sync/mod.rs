@@ -77,24 +77,28 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
             .unwrap_or_else(|| entry.path.clone())
     }
 
+    info!("[sync] diff server entries:");
     for entry in &server_manifest {
         let s_name = file_name_of(entry);
+        info!("[sync]   server: {} (hash={}, mtime={})", s_name, entry.hash, entry.mtime);
         let local_match = local_manifest.iter().find(|e| file_name_of(e) == s_name);
         match local_match {
-            None => downloads.push(entry.clone()),
-            Some(local) if local.hash == entry.hash => {}
-            Some(local) => conflicts.push((local.clone(), entry.clone())),
+            None => { info!("[sync]   → download (no local match)"); downloads.push(entry.clone()); }
+            Some(local) if local.hash == entry.hash => { info!("[sync]   → skip (hash match)"); }
+            Some(local) => { info!("[sync]   → conflict (local hash={}, server hash={})", local.hash, entry.hash); conflicts.push((local.clone(), entry.clone())); }
         }
     }
+    info!("[sync] diff local entries (non-conflict):");
     for entry in &local_manifest {
         let l_name = file_name_of(entry);
         let is_conflict = conflicts.iter().any(|(local, _)| file_name_of(local) == l_name);
         if is_conflict {
             continue;
         }
+        info!("[sync]   local: {} (hash={})", l_name, entry.hash);
         match server_manifest.iter().find(|e| file_name_of(e) == l_name) {
-            Some(_) => {}
-            None => uploads.push(entry.clone()),
+            Some(_) => { info!("[sync]   → skip (server match)"); }
+            None => { info!("[sync]   → upload (no server match)"); uploads.push(entry.clone()); }
         }
     }
 
@@ -185,15 +189,15 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
                 .file_name()
                 .map(|n| n.to_string_lossy().to_string())
                 .unwrap_or_else(|| local.path.clone());
-            let local_disk = shellexpand::tilde(&local.path).to_string();
+            let local_disk = sync_root.join(&local.path).to_string_lossy().to_string();
             let pool = pool.clone();
             match client::upload_file(&http, base, &file_name, &local_disk).await {
                 Ok(()) => {
                     info!("[sync] uploaded {} (local newer)", path);
                     let hash = local.hash.clone();
-                    let path = local.path.clone();
+                    let absolute_path = sync_root.join(&local.path).to_string_lossy().to_string();
                     tokio::task::block_in_place(|| {
-                        let _ = crate::db::mark_synced(&pool, &path, &hash);
+                        let _ = crate::db::mark_synced(&pool, &absolute_path, &hash);
                     });
                 }
                 Err(e) => {
