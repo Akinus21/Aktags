@@ -226,10 +226,9 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
             match client::download_file(&http, base, &file_name, &local_disk).await {
                 Ok(()) => {
                     info!("[sync] downloaded {} (server newer)", path);
-                    // Verify file exists and hash matches
+                    // Verify file exists
                     if std::path::Path::new(&local_disk).exists() {
-                        let computed = db::file_hash(std::path::Path::new(&local_disk));
-                        info!("[sync] verify: local_disk={}, computed_hash={}, server_hash={}", local_disk, computed, server.hash);
+                        info!("[sync] verify: file exists at {}, size={}", local_disk, std::fs::metadata(&local_disk).map(|m| m.len()).unwrap_or(0));
                     } else {
                         warn!("[sync] downloaded file not found at {}", local_disk);
                     }
