@@ -260,7 +260,7 @@ impl AkTags {
         let cmd = if app.panel == Panel::Browser {
             app.refresh_all()
         } else {
-            Task::none()
+            Task::<Message>::none();
         };
 
         let cmd = if is_first_run {
@@ -765,7 +765,7 @@ impl AkTags {
                         );
                     }
                 }
-                Task::none()
+                Task::<Message>::none();
             }
 
             Message::FileSaved(ok) => {
@@ -774,7 +774,7 @@ impl AkTags {
                 self.status_message = Some(
                     if ok { "File saved with tags".into() } else { "Save failed".into() }
                 );
-                Task::none()
+                Task::<Message>::none();
             }
 
             Message::SaveFileAs(file_id) => {
@@ -789,7 +789,7 @@ impl AkTags {
                         Message::SavePathChosen(dest.map(|p| p.to_string_lossy().to_string()))
                     }, |r| r);
                 }
-                Task::none()
+                Task::<Message>::none();
             }
 
             Message::SavePathChosen(dest_opt) => {
@@ -817,7 +817,7 @@ impl AkTags {
                 }
                 self.save_file_id = None;
                 self.save_selected_tags.clear();
-                Task::none()
+                Task::<Message>::none();
             }
 
             Message::FileSaved(ok) => {
@@ -826,12 +826,12 @@ impl AkTags {
                 self.status_message = Some(
                     if ok { "File saved with tags".into() } else { "Save failed".into() }
                 );
-                Task::none()
+                Task::<Message>::none();
             }
 
             Message::AddTagToFile(..) => {}
         }
-        Task::none()
+        Task::<Message>::none();
     }
 
     pub fn view(&self) -> Element<'_, Message> {
