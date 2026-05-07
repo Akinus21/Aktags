@@ -139,16 +139,13 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
 
     // 5. TRANSFER — DOWNLOADS
     for entry in downloads {
-        // Use server path as-is for the download URL
-        let remote_path = entry.path.as_str();
-        // For local destination, strip any leading directory prefix (e.g., /data/)
-        // and write directly to the sync root
+        // Strip directory prefix from server path for both download URL and local destination
         let file_name = std::path::Path::new(&entry.path)
             .file_name()
             .map(|n| n.to_string_lossy().to_string())
             .unwrap_or_else(|| entry.path.clone());
         let local_disk = sync_root.join(&file_name).to_string_lossy().to_string();
-        match client::download_file(&http, base, remote_path, &local_disk).await {
+        match client::download_file(&http, base, &file_name, &local_disk).await {
             Ok(()) => {
                 info!("[sync] downloaded {}", entry.path);
                 let pool = pool.clone();
