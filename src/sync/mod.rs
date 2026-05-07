@@ -64,21 +64,30 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
     info!("[sync] building local manifest ...");
     let local_manifest = client::build_local_manifest(pool, &sync_root).await?;
 
-    // 4. DIFF
+    // 4. DIFF — match by filename (strip directory prefixes from server paths)
     let mut uploads: Vec<client::ManifestEntry> = vec![];
     let mut downloads: Vec<client::ManifestEntry> = vec![];
     let mut conflicts: Vec<(client::ManifestEntry, client::ManifestEntry)> = vec![];
     let mut delete_paths: Vec<String> = vec![];
 
+    fn file_name_of(entry: &client::ManifestEntry) -> String {
+        std::path::Path::new(&entry.path)
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_else(|| entry.path.clone())
+    }
+
     for entry in &server_manifest {
-        match local_manifest.iter().find(|e| e.path == entry.path) {
+        let s_name = file_name_of(entry);
+        match local_manifest.iter().find(|e| file_name_of(e) == s_name) {
             None => downloads.push(entry.clone()),
             Some(local) if local.hash == entry.hash => {}
             Some(local) => conflicts.push((local.clone(), entry.clone())),
         }
     }
     for entry in &local_manifest {
-        match server_manifest.iter().find(|e| e.path == entry.path) {
+        let l_name = file_name_of(entry);
+        match server_manifest.iter().find(|e| file_name_of(e) == l_name) {
             Some(_) => {}
             None => uploads.push(entry.clone()),
         }
