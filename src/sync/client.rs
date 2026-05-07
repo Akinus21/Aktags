@@ -191,7 +191,7 @@ pub async fn delete_file(
     base: &str,
     remote_path: &str,
 ) -> Result<()> {
-    let url = format!("{}/api/file/{}", base, remote_path);
+    let url = format!("{}/api/sync/files/{}", base, remote_path);
     let resp = client.delete(&url).send().await?;
     let status = resp.status();
     if status.is_success() {

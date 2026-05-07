@@ -193,6 +193,11 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
             }
         } else {
             // Server wins → download (before overwriting local file, entomb local copy)
+            // Strip directory prefix from server path for server URL (may differ from local storage)
+            let file_name = std::path::Path::new(&server.path)
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_else(|| server.path.clone());
             let local_disk = sync_root.join(&local.path).to_string_lossy().to_string();
             let pool = pool.clone();
             // Entomb local losing copy
@@ -205,7 +210,7 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
                 None,
                 crate::config::GraveyardConfig::default().ttl_days,
             );
-            match client::download_file(&http, base, &server.path, &local_disk).await {
+            match client::download_file(&http, base, &file_name, &local_disk).await {
                 Ok(()) => {
                     info!("[sync] downloaded {} (server newer)", path);
                     let hash = server.hash.clone();
