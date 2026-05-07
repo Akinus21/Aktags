@@ -187,7 +187,7 @@ pub fn view_rejected(app: &AkTags) -> Element<'_, Message> {
                 })
                 .into()
         } else {
-            Space::with_width(0.0).into()
+            Space::with_width(0.0) as Element<'_, Message>
         },
     ]
     .align_y(Alignment::Center)

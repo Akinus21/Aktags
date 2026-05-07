@@ -820,15 +820,6 @@ impl AkTags {
                 Task::<Message>::none();
             }
 
-            Message::FileSaved(ok) => {
-                self.save_file_id = None;
-                self.save_selected_tags.clear();
-                self.status_message = Some(
-                    if ok { "File saved with tags".into() } else { "Save failed".into() }
-                );
-                Task::<Message>::none();
-            }
-
             Message::AddTagToFile(..) => {}
         }
         Task::<Message>::none()
