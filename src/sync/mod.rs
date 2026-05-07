@@ -233,11 +233,28 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
         match client::delete_file(&http, base, &rel_path).await {
             Ok(()) => {
                 info!("[sync] deleted {}", rel_path);
+                // Hard-delete local record so it doesn't re-delete next cycle
+                let pool = pool.clone();
+                let abs_path = abs_path.clone();
+                tokio::task::block_in_place(|| {
+                    let conn = pool.get().ok();
+                    if let Some(conn) = conn {
+                        let _ = conn.execute("DELETE FROM files WHERE path = ?", [&abs_path]);
+                    }
+                });
             }
             Err(e) => {
                 // 404 = file already gone on server, treat as success
                 if e.to_string().contains("404") {
                     info!("[sync] file already deleted on server: {}", rel_path);
+                    let pool = pool.clone();
+                    let abs_path = abs_path.clone();
+                    tokio::task::block_in_place(|| {
+                        let conn = pool.get().ok();
+                        if let Some(conn) = conn {
+                            let _ = conn.execute("DELETE FROM files WHERE path = ?", [&abs_path]);
+                        }
+                    });
                 } else {
                     error!("[sync] delete failed for {}: {}", abs_path, e);
                 }
