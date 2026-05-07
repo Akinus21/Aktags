@@ -79,7 +79,8 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
 
     for entry in &server_manifest {
         let s_name = file_name_of(entry);
-        match local_manifest.iter().find(|e| file_name_of(e) == s_name) {
+        let local_match = local_manifest.iter().find(|e| file_name_of(e) == s_name);
+        match local_match {
             None => downloads.push(entry.clone()),
             Some(local) if local.hash == entry.hash => {}
             Some(local) => conflicts.push((local.clone(), entry.clone())),
@@ -87,6 +88,10 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
     }
     for entry in &local_manifest {
         let l_name = file_name_of(entry);
+        let is_conflict = conflicts.iter().any(|(local, _)| file_name_of(local) == l_name);
+        if is_conflict {
+            continue;
+        }
         match server_manifest.iter().find(|e| file_name_of(e) == l_name) {
             Some(_) => {}
             None => uploads.push(entry.clone()),
