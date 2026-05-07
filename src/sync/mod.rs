@@ -255,7 +255,7 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
             Err(e) => {
                 // 404 = file already gone on server, treat as success
                 if e.to_string().contains("404") {
-                    info!("[sync] file already deleted on server: {}", rel_path);
+                    info!("[sync] file already deleted on server: {}", file_name);
                     let pool = pool.clone();
                     let abs_path = abs_path.clone();
                     tokio::task::block_in_place(|| {

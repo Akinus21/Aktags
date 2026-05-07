@@ -751,7 +751,7 @@ impl AkTags {
                             .map(|n| n.to_string_lossy().to_string())
                             .unwrap_or_else(|| "imported_file".to_string());
                         let dest_path = dest.join(&file_name);
-                        let pool = self.pool.clone();
+                        let _pool = self.pool.clone();
                         return Task::perform(
                             async move {
                                 if let Err(e) = tokio::fs::copy(&path, &dest_path).await {
