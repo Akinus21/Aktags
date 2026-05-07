@@ -124,15 +124,14 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
 
     // 5. TRANSFER — UPLOADS
     for entry in uploads {
-        // Compute relative path for server, keep absolute path for local DB operations
-        let entry_path = std::path::Path::new(&entry.path);
-        let relative_path = entry_path
-            .strip_prefix(&sync_root)
-            .map(|p| p.to_string_lossy().to_string())
-            .unwrap_or_else(|_| entry.path.clone());
+        // local_manifest paths are already relative (stripped of sync_root in build_local_manifest)
+        let file_name = std::path::Path::new(&entry.path)
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_else(|| entry.path.clone());
         let local_disk = sync_root.join(&entry.path).to_string_lossy().to_string();
-        let absolute_path = entry.path.clone(); // Keep absolute for mark_synced
-        match client::upload_file(&http, base, &relative_path, &local_disk).await {
+        let absolute_path = sync_root.join(&entry.path).to_string_lossy().to_string();
+        match client::upload_file(&http, base, &file_name, &local_disk).await {
             Ok(()) => {
                 info!("[sync] uploaded {}", entry.path);
                 let pool = pool.clone();
@@ -176,9 +175,14 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
 
         if mtime_local > mtime_server {
             // Local wins → upload
+            // Strip directory prefix from local path for server URL (server stores relative paths only)
+            let file_name = std::path::Path::new(&local.path)
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_else(|| local.path.clone());
             let local_disk = shellexpand::tilde(&local.path).to_string();
             let pool = pool.clone();
-            match client::upload_file(&http, base, &local.path, &local_disk).await {
+            match client::upload_file(&http, base, &file_name, &local_disk).await {
                 Ok(()) => {
                     info!("[sync] uploaded {} (local newer)", path);
                     let hash = local.hash.clone();
@@ -228,16 +232,16 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
 
     // 6. PROPAGATE DELETES — delete files that were removed locally
     for abs_path in delete_paths {
-        // Try stripping each watch_dir to get relative path for server
-        let rel_path = watch_dirs.iter()
-            .find_map(|wd| std::path::Path::new(&abs_path).strip_prefix(wd).ok())
-            .map(|p| p.to_string_lossy().to_string())
+        // Use only the filename for deletion (server stores relative paths, not absolute)
+        let file_name = std::path::Path::new(&abs_path)
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
             .unwrap_or_else(|| abs_path.clone());
 
-        info!("[sync] deleting file on server: {}", rel_path);
-        match client::delete_file(&http, base, &rel_path).await {
+        info!("[sync] deleting file on server: {}", file_name);
+        match client::delete_file(&http, base, &file_name).await {
             Ok(()) => {
-                info!("[sync] deleted {}", rel_path);
+                info!("[sync] deleted {}", abs_path);
                 // Hard-delete local record so it doesn't re-delete next cycle
                 let pool = pool.clone();
                 let abs_path = abs_path.clone();
