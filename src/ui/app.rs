@@ -260,7 +260,7 @@ impl AkTags {
         let cmd = if app.panel == Panel::Browser {
             app.refresh_all()
         } else {
-            Task::<Message>::none();
+            Task::<Message>::none()
         };
 
         let cmd = if is_first_run {
@@ -831,7 +831,7 @@ impl AkTags {
 
             Message::AddTagToFile(..) => {}
         }
-        Task::<Message>::none();
+        Task::<Message>::none()
     }
 
     pub fn view(&self) -> Element<'_, Message> {
