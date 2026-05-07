@@ -242,10 +242,11 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
     for file in all_files {
         let local_id = {
             let pool = pool.clone();
+            let abs_path = sync_root.join(&file.path).to_string_lossy().to_string();
             tokio::task::block_in_place(|| {
                 let conn = pool.get().ok()?;
                 let id: Option<i64> = conn
-                    .query_row("SELECT id FROM files WHERE path = ?", [file.path.clone()], |r| r.get(0))
+                    .query_row("SELECT id FROM files WHERE path = ?", [abs_path], |r| r.get(0))
                     .ok();
                 id
             })
