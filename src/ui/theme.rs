@@ -2,6 +2,7 @@ use iced::Color;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Arc;
+use tracing::info;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ThemeType {
@@ -96,6 +97,7 @@ pub fn list_themes() -> Vec<ThemeType> {
 
 #[allow(dead_code)]
 pub fn load_theme(theme_type: ThemeType) -> ThemeColors {
+    // First try custom JSON theme file
     let name = theme_type.to_string();
     let path = theme_file_path(&name);
     if path.exists() {
@@ -105,7 +107,100 @@ pub fn load_theme(theme_type: ThemeType) -> ThemeColors {
             }
         }
     }
+
+    // For Noctalia, try to read from ~/.config/noctalia/colors.json
+    // if the hardcoded defaults aren't being overridden
+    if theme_type == ThemeType::Noctalia {
+        if let Some(noctalia_colors) = load_noctalia_colors() {
+            info!("[theme] loaded Noctalia colors from ~/.config/noctalia/colors.json");
+            return noctalia_colors;
+        }
+    }
+
     default_colors(theme_type)
+}
+
+fn parse_hex_to_rgba(hex: &str) -> Option<[f32; 4]> {
+    let hex = hex.strip_prefix('#')?;
+    let (r, g, b, a) = match hex.len() {
+        6 => {
+            let r = u8::from_str_radix(&hex[0..2], 16).ok()?;
+            let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
+            let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
+            (r, g, b, 255u8)
+        }
+        8 => {
+            let r = u8::from_str_radix(&hex[0..2], 16).ok()?;
+            let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
+            let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
+            let a = u8::from_str_radix(&hex[6..8], 16).ok()?;
+            (r, g, b, a)
+        }
+        _ => return None,
+    };
+    Some([r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, a as f32 / 255.0])
+}
+
+#[derive(serde::Deserialize)]
+struct NoctaliaRawColors {
+    #[serde(rename = "mPrimary")]
+    primary: Option<String>,
+    #[serde(rename = "mOnPrimary")]
+    on_primary: Option<String>,
+    #[serde(rename = "mSurface")]
+    surface: Option<String>,
+    #[serde(rename = "mOnSurface")]
+    on_surface: Option<String>,
+    #[serde(rename = "mSurfaceVariant")]
+    surface_variant: Option<String>,
+    #[serde(rename = "mOnSurfaceVariant")]
+    on_surface_variant: Option<String>,
+    #[serde(rename = "mError")]
+    error: Option<String>,
+}
+
+fn load_noctalia_colors() -> Option<ThemeColors> {
+    let noctalia_path = dirs::config_dir()?.join("noctalia").join("colors.json");
+    if !noctalia_path.exists() {
+        return None;
+    }
+    let content = std::fs::read_to_string(&noctalia_path).ok()?;
+    let raw: NoctaliaRawColors = serde_json::from_str(&content).ok()?;
+
+    // Map Material You colors to Aktags ThemeColors
+    // mPrimary -> accent (primary brand color)
+    let accent = raw.primary.as_ref().and_then(|h| parse_hex_to_rgba(h)).map(|c| c).unwrap_or(default_colors(ThemeType::Noctalia).accent);
+    // mOnPrimary -> surface (for contrast)
+    let surface = raw.on_primary.as_ref().and_then(|h| parse_hex_to_rgba(h)).map(|c| c).unwrap_or(default_colors(ThemeType::Noctalia).surface);
+    // mSurface -> bg
+    let bg = raw.surface.as_ref().and_then(|h| parse_hex_to_rgba(h)).map(|c| c).unwrap_or(default_colors(ThemeType::Noctalia).bg);
+    // mOnSurface -> text
+    let text = raw.on_surface.as_ref().and_then(|h| parse_hex_to_rgba(h)).map(|c| c).unwrap_or(default_colors(ThemeType::Noctalia).text);
+    // mSurfaceVariant -> surface2
+    let surface2 = raw.surface_variant.as_ref().and_then(|h| parse_hex_to_rgba(h)).map(|c| c).unwrap_or(default_colors(ThemeType::Noctalia).surface2);
+    // mOnSurfaceVariant -> text_dim
+    let text_dim = raw.on_surface_variant.as_ref().and_then(|h| parse_hex_to_rgba(h)).map(|c| c).unwrap_or(default_colors(ThemeType::Noctalia).text_dim);
+    // mError -> red
+    let red = raw.error.as_ref().and_then(|h| parse_hex_to_rgba(h)).map(|c| c).unwrap_or(default_colors(ThemeType::Noctalia).red);
+
+    // Use Noctalia defaults for colors without direct Material You mapping
+    let defaults = default_colors(ThemeType::Noctalia);
+
+    Some(ThemeColors {
+        bg,
+        surface,
+        surface2,
+        border: defaults.border,
+        accent,
+        accent2: defaults.accent2,
+        text,
+        text_dim,
+        green: defaults.green,
+        red,
+        yellow: defaults.yellow,
+        orange: defaults.orange,
+        tag_bg: defaults.tag_bg,
+    })
 }
 
 pub fn save_theme(theme_type: ThemeType, colors: &ThemeColors) -> std::io::Result<()> {
