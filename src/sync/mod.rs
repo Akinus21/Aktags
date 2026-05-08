@@ -182,6 +182,10 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
         let mtime_server = server.mtime;
         let path = &local.path;
 
+        // DEBUG: Log exact conflict data
+        info!("[sync] CONFLICT: local_path={}, local_hash={}, local_mtime={}, server_path={}, server_hash={}, server_mtime={}",
+            local.path, local.hash, mtime_local, server.path, server.hash, mtime_server);
+
         if mtime_local > mtime_server {
             // Local wins → upload
             // Strip directory prefix from local path for server URL (server stores relative paths only)
@@ -190,12 +194,14 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
                 .map(|n| n.to_string_lossy().to_string())
                 .unwrap_or_else(|| local.path.clone());
             let local_disk = sync_root.join(&local.path).to_string_lossy().to_string();
+            let absolute_path = sync_root.join(&local.path).to_string_lossy().to_string();
             let pool = pool.clone();
+            info!("[sync] CONFLICT local-wins: file_name={}, local_disk={}, absolute_path={}", file_name, local_disk, absolute_path);
             match client::upload_file(&http, base, &file_name, &local_disk).await {
                 Ok(()) => {
                     info!("[sync] uploaded {} (local newer)", path);
                     let hash = local.hash.clone();
-                    let absolute_path = sync_root.join(&local.path).to_string_lossy().to_string();
+                    info!("[sync] CONFLICT local-wins mark_synced: path={}, hash={}", absolute_path, hash);
                     tokio::task::block_in_place(|| {
                         let _ = crate::db::mark_synced(&pool, &absolute_path, &hash);
                     });
@@ -212,7 +218,9 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
                 .map(|n| n.to_string_lossy().to_string())
                 .unwrap_or_else(|| server.path.clone());
             let local_disk = sync_root.join(&local.path).to_string_lossy().to_string();
+            let absolute_path = sync_root.join(&local.path).to_string_lossy().to_string();
             let pool = pool.clone();
+            info!("[sync] CONFLICT server-wins: file_name={}, local_disk={}, absolute_path={}", file_name, local_disk, absolute_path);
             // Entomb local losing copy
             let _ = crate::graveyard::entomb(
                 std::path::Path::new(&local_disk),
@@ -226,7 +234,6 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
             match client::download_file(&http, base, &file_name, &local_disk).await {
                 Ok(()) => {
                     info!("[sync] downloaded {} (server newer)", path);
-                    info!("[sync] conflict-resolve: local_path={}, sync_root={}, local_disk={}", local.path, sync_root.display(), local_disk);
                     // Verify file exists
                     if std::path::Path::new(&local_disk).exists() {
                         info!("[sync] verify: file exists at {}, size={}", local_disk, std::fs::metadata(&local_disk).map(|m| m.len()).unwrap_or(0));
@@ -234,8 +241,7 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
                         warn!("[sync] downloaded file not found at {}", local_disk);
                     }
                     let hash = server.hash.clone();
-                    let absolute_path = sync_root.join(&local.path).to_string_lossy().to_string();
-                    info!("[sync] mark_synced path={}, hash={}", absolute_path, hash);
+                    info!("[sync] CONFLICT server-wins mark_synced: path={}, hash={}", absolute_path, hash);
                     tokio::task::block_in_place(|| {
                         let _ = crate::db::mark_synced(&pool, &absolute_path, &hash);
                     });
