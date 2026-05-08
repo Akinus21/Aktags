@@ -1,6 +1,6 @@
 [package]
 name = "aktags"
-version = "0.0.55"
+version = "0.0.57"
 edition = "2021"
 description = "AI-powered tag-based file browser with background daemon"
 
