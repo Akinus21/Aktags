@@ -226,6 +226,7 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
             match client::download_file(&http, base, &file_name, &local_disk).await {
                 Ok(()) => {
                     info!("[sync] downloaded {} (server newer)", path);
+                    info!("[sync] conflict-resolve: local_path={}, sync_root={}, local_disk={}", local.path, sync_root.display(), local_disk);
                     // Verify file exists
                     if std::path::Path::new(&local_disk).exists() {
                         info!("[sync] verify: file exists at {}, size={}", local_disk, std::fs::metadata(&local_disk).map(|m| m.len()).unwrap_or(0));
@@ -234,6 +235,7 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
                     }
                     let hash = server.hash.clone();
                     let absolute_path = sync_root.join(&local.path).to_string_lossy().to_string();
+                    info!("[sync] mark_synced path={}, hash={}", absolute_path, hash);
                     tokio::task::block_in_place(|| {
                         let _ = crate::db::mark_synced(&pool, &absolute_path, &hash);
                     });
