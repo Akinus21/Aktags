@@ -77,9 +77,18 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
             .unwrap_or_else(|| entry.path.clone())
     }
 
+    // Track which filenames we've already processed from server manifest to avoid
+    // re-processing duplicates (server may have multiple versions of the same file)
+    let mut handled_filenames: std::collections::HashSet<String> = std::collections::HashSet::new();
+
     info!("[sync] diff server entries:");
     for entry in &server_manifest {
         let s_name = file_name_of(entry);
+        // Skip if we've already handled this filename (a newer version was already processed)
+        if handled_filenames.contains(&s_name) {
+            info!("[sync]   server: {} (hash={}, mtime={}) → skip (already processed)", s_name, entry.hash, entry.mtime);
+            continue;
+        }
         info!("[sync]   server: {} (hash={}, mtime={})", s_name, entry.hash, entry.mtime);
         let local_match = local_manifest.iter().find(|e| file_name_of(e) == s_name);
         match local_match {
@@ -87,6 +96,8 @@ pub async fn run_sync(config: &CloudConfig, pool: &DbPool, identity: &crate::syn
             Some(local) if local.hash == entry.hash => { info!("[sync]   → skip (hash match)"); }
             Some(local) => { info!("[sync]   → conflict (local hash={}, server hash={})", local.hash, entry.hash); conflicts.push((local.clone(), entry.clone())); }
         }
+        // Mark this filename as handled so we skip any older duplicates of the same file
+        handled_filenames.insert(s_name);
     }
     info!("[sync] diff local entries (non-conflict):");
     for entry in &local_manifest {
