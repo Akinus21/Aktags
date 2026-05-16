@@ -122,7 +122,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           TAG_NAME: ${{ steps.version.outputs.new_tag }}
-          SHA256: ${{ steps.release.outputs.sha256 }}
+          SHA256: ${{ steps.verify.outputs.sha256 }}
         run: |
           set -euo pipefail
           if [ -z "${GH_TOKEN:-}" ]; then
@@ -151,7 +151,7 @@ jobs:
             end
 
             def post_install
-              (var/"aktags").mkpath
+              mkdir_p var/"aktags"
             end
 
             service do
